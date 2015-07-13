@@ -28,9 +28,9 @@
   },
   "autoload": {
     "psr-4": {
-      "voskobovich\\nestedsets\\widgets\\": "widgets/",
-      "voskobovich\\nestedsets\\behaviors\\": "behaviors/",
-      "voskobovich\\nestedsets\\actions\\": "actions/"
+      "voskobovich\\nestedsets\\widgets\\": "widgets",
+      "voskobovich\\nestedsets\\behaviors\\": "behaviors",
+      "voskobovich\\nestedsets\\actions\\": "actions"
     }
   }
 }
