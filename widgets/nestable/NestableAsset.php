@@ -13,7 +13,7 @@ class NestableAsset extends AssetBundle
     /**
      * @var string
      */
-    public $sourcePath = '@vendor/voskobovich/nestedsets/widgets/assets';
+    public $sourcePath = '@vendor/voskobovich/nestedsets/widgets/nestable/assets';
 
     /**
      * @var array
