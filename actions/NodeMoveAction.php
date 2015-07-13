@@ -55,13 +55,21 @@ class NodeMoveAction extends Action
             throw new InvalidConfigException("No 'behaviorName' supplied on action initialization.");
         }
 
-        /* Locate the supplied model, left, right and parent models */
-        $currentModel = Yii::createObject($this->modelClass)->where(['id' => $id])->one();
-        $lftModel = Yii::createObject($this->modelClass)->where(['id' => $lft])->one();
-        $rgtModel = Yii::createObject($this->modelClass)->where(['id' => $rgt])->one();
-        $parentModel = Yii::createObject($this->modelClass)->where(['id' => $par])->one();
+        /*
+         * Locate the supplied model, left, right and parent models
+         */
+        /** @var ActiveRecord $currentModel */
+        $currentModel = $model::find()->where(['id' => $id])->one();
+        /** @var ActiveRecord $lftModel */
+        $lftModel = $model::find()->where(['id' => $lft])->one();
+        /** @var ActiveRecord $rgtModel */
+        $rgtModel = $model::find()->where(['id' => $rgt])->one();
+        /** @var ActiveRecord $parentModel */
+        $parentModel = $model::find()->where(['id' => $par])->one();
 
-        /* Calculate the depth change */
+        /*
+         * Calculate the depth change
+         */
         if (null == $parentModel) {
             $depthDelta = -1;
         } else if (null == ($parent = $currentModel->parents(1)->one())) {
@@ -72,7 +80,9 @@ class NodeMoveAction extends Action
             $depthDelta = 0;
         }
 
-        /* Calculate the left/right change */
+        /*
+         * Calculate the left/right change
+         */
         if (null == $lftModel) {
             $currentModel->nodeMove((($parentModel ? $parentModel->{$behavior->leftAttribute} : 0) + 1), $depthDelta);
         } else if (null == $rgtModel) {
@@ -81,10 +91,14 @@ class NodeMoveAction extends Action
             $currentModel->nodeMove(($rgtModel ? $rgtModel->{$behavior->leftAttribute} : 0), $depthDelta);
         }
 
-        /* Response will be in JSON format */
+        /*
+         * Response will be in JSON format
+         */
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        /* Report new position */
+        /*
+         * Report new position
+         */
         return [
             'updated' => [
                 'id' => $currentModel->id,
