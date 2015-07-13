@@ -1,0 +1,36 @@
+{
+  "name": "voskobovich/yii2-nested-sets-editor",
+  "description": "Nested set editor using jquery.nestable plugin for Yii 2",
+  "keywords": [
+    "widget",
+    "nested sets",
+    "yii2",
+    "nestable",
+    "editor"
+  ],
+  "homepage": "https://github.com/voskobovich/yii2-nested-sets-editor",
+  "type": "yii2-widget",
+  "license": "MIT",
+  "support": {
+    "issues": "https://github.com/voskobovich/yii2-nested-sets-editor/issues",
+    "source": "https://github.com/voskobovich/yii2-nested-sets-editor"
+  },
+  "authors": [
+    {
+      "name": "Vitaly Voskobovich",
+      "email": "vitaly@voskobovich.com",
+      "homepage": "http://voskobovich.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.4.0",
+    "yiisoft/yii2": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "voskobovich\\nestedsets\\widgets\\": "widgets/",
+      "voskobovich\\nestedsets\\behaviors\\": "behaviors/",
+      "voskobovich\\nestedsets\\actions\\": "actions/"
+    }
+  }
+}
