@@ -5,8 +5,9 @@ namespace voskobovich\nestedsets\actions;
 use Yii;
 use yii\base\Action;
 use yii\base\InvalidConfigException;
-use yii\db\ActiveQuery;
 use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
+use yii\db\ActiveRecord;
+use yii\web\Response;
 
 /**
  * Class NodeMoveAction
@@ -14,14 +15,16 @@ use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
  */
 class NodeMoveAction extends Action
 {
-    /** @var string class to use to locate the supplied data ids */
+    /**
+     * Class to use to locate the supplied data ids
+     * @var string
+     */
     public $modelClass;
 
-    /** @vars string the attribute names of the model that hold these attributes */
-    private $leftAttribute;
-    private $rightAttribute;
-    private $treeAttribute;
-    private $depthAttribute;
+    /**
+     * @var string
+     */
+    public $behaviorName;
 
     /**
      * Move a node (model) below the parent and in between left and right
@@ -39,62 +42,55 @@ class NodeMoveAction extends Action
             throw new InvalidConfigException("No 'modelClass' supplied on action initialization.");
         }
 
-        /* response will be in JSON format */
-        Yii::$app->response->format = 'json';
-
-        /* Locate the supplied model, left, right and parent models */
-        $model = Yii::createObject(ActiveQuery::className(), [$this->modelClass])->where(['id' => $id])->one();
-        $lft = Yii::createObject(ActiveQuery::className(), [$this->modelClass])->where(['id' => $lft])->one();
-        $rgt = Yii::createObject(ActiveQuery::className(), [$this->modelClass])->where(['id' => $rgt])->one();
-        $par = Yii::createObject(ActiveQuery::className(), [$this->modelClass])->where(['id' => $par])->one();
-
-        /* Get attribute names from model behaviour config */
-        foreach ($model->behaviors as $behavior) {
-            if ($behavior instanceof NestedSetsBehavior) {
-                $this->leftAttribute = $behavior->leftAttribute;
-                $this->rightAttribute = $behavior->rightAttribute;
-                $this->treeAttribute = $behavior->treeAttribute;
-                $this->depthAttribute = $behavior->depthAttribute;
-                break;
-            }
+        if (null == $this->behaviorName) {
+            throw new InvalidConfigException("No 'behaviorName' supplied on action initialization.");
         }
 
-        /* attach our bahaviour to be able to call the moveNode() function of the NestedSetsBehavior */
-        $model->attachBehavior('nestable', [
-            'class' => NestedSetsBehavior::className(),
-            'leftAttribute' => $this->leftAttribute,
-            'rightAttribute' => $this->rightAttribute,
-            'treeAttribute' => $this->treeAttribute,
-            'depthAttribute' => $this->depthAttribute,
-        ]);
+        /** @var ActiveRecord $model */
+        $model = new $this->modelClass;
+        /** @var NestedSetsBehavior $behavior */
+        $behavior = $model->getBehavior($this->behaviorName);
+
+        if ($behavior == null) {
+            throw new InvalidConfigException("No 'behaviorName' supplied on action initialization.");
+        }
+
+        /* Locate the supplied model, left, right and parent models */
+        $currentModel = Yii::createObject($this->modelClass)->where(['id' => $id])->one();
+        $lftModel = Yii::createObject($this->modelClass)->where(['id' => $lft])->one();
+        $rgtModel = Yii::createObject($this->modelClass)->where(['id' => $rgt])->one();
+        $parentModel = Yii::createObject($this->modelClass)->where(['id' => $par])->one();
 
         /* Calculate the depth change */
-        if (null == $par) {
+        if (null == $parentModel) {
             $depthDelta = -1;
-        } else if (null == ($parent = $model->parents(1)->one())) {
+        } else if (null == ($parent = $currentModel->parents(1)->one())) {
             $depthDelta = 0;
-        } else if ($parent->id != $par->id) {
-            $depthDelta = $par->{$this->depthAttribute} - $model->{$this->depthAttribute} + 1;
+        } else if ($parent->id != $parentModel->id) {
+            $depthDelta = $parentModel->{$behavior->depthAttribute} - $currentModel->{$behavior->depthAttribute} + 1;
         } else {
             $depthDelta = 0;
         }
 
         /* Calculate the left/right change */
-        if (null == $lft) {
-            $model->nodeMove((($par ? $par->{$this->leftAttribute} : 0) + 1), $depthDelta);
-        } else if (null == $rgt) {
-            $model->nodeMove((($lft ? $lft->{$this->rightAttribute} : 0) + 1), $depthDelta);
+        if (null == $lftModel) {
+            $currentModel->nodeMove((($parentModel ? $parentModel->{$behavior->leftAttribute} : 0) + 1), $depthDelta);
+        } else if (null == $rgtModel) {
+            $currentModel->nodeMove((($lftModel ? $lftModel->{$behavior->rightAttribute} : 0) + 1), $depthDelta);
         } else {
-            $model->nodeMove(($rgt ? $rgt->{$this->leftAttribute} : 0), $depthDelta);
+            $currentModel->nodeMove(($rgtModel ? $rgtModel->{$behavior->leftAttribute} : 0), $depthDelta);
         }
 
-        /* report new position */
+        /* Response will be in JSON format */
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        /* Report new position */
         return [
             'updated' => [
-                'id' => $model->id,
-                'depth' => $model->{$this->depthAttribute},
-                'lft' => $model->{$this->leftAttribute},
-                'rgt' => $model->{$this->rightAttribute},
+                'id' => $currentModel->id,
+                'depth' => $currentModel->{$behavior->depthAttribute},
+                'lft' => $currentModel->{$behavior->leftAttribute},
+                'rgt' => $currentModel->{$behavior->rightAttribute},
             ]
         ];
     }
