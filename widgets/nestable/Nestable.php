@@ -156,9 +156,22 @@ class Nestable extends Widget
     {
         NestableAsset::register($this->getView());
 
+        if ($this->moveUrl) {
+            $this->pluginOptions['moveUrl'] = $this->moveUrl;
+        }
+        if ($this->createUrl) {
+            $this->pluginOptions['createUrl'] = $this->createUrl;
+        }
+        if ($this->updateUrl) {
+            $this->pluginOptions['updateUrl'] = $this->updateUrl;
+        }
+        if ($this->deleteUrl) {
+            $this->pluginOptions['deleteUrl'] = $this->deleteUrl;
+        }
+
         $view = $this->getView();
 
-        $pluginOptions = ArrayHelper::merge($this->pluginOptions, $this->getDefaultPluginOptions());
+        $pluginOptions = ArrayHelper::merge($this->getDefaultPluginOptions(), $this->pluginOptions);
         $pluginOptions = Json::encode($pluginOptions);
         $view->registerJs("$('#{$this->id}').nestable({$pluginOptions});");
 
@@ -186,29 +199,26 @@ class Nestable extends Widget
     private function getDefaultPluginOptions()
     {
         $options = [
-            'moveUrl' => $this->moveUrl,
-            'createUrl' => $this->createUrl,
-            'updateUrl' => $this->updateUrl,
-            'deleteUrl' => $this->deleteUrl,
+            'namePlaceholder' => $this->getNamePlaceholder(),
         ];
 
         $controller = Yii::$app->controller;
         if ($controller) {
-            if (!$options['moveUrl']) {
-                $options['moveUrl'] = Url::to(["{$controller->id}/moveNode"]);
-            }
-            if (!$options['createUrl']) {
-                $options['createUrl'] = Url::to(["{$controller->id}/createNode"]);
-            }
-            if (!$options['updateUrl']) {
-                $options['updateUrl'] = Url::to(["{$controller->id}/updateNode"]);
-            }
-            if (!$options['deleteUrl']) {
-                $options['deleteUrl'] = Url::to(["{$controller->id}/deleteNode"]);
-            }
+            $options['moveUrl'] = Url::to(["{$controller->id}/moveNode"]);
+            $options['createUrl'] = Url::to(["{$controller->id}/createNode"]);
+            $options['updateUrl'] = Url::to(["{$controller->id}/updateNode"]);
+            $options['deleteUrl'] = Url::to(["{$controller->id}/deleteNode"]);
         }
 
         return $options;
+    }
+
+    /**
+     * Get placeholder for Name input
+     */
+    public function getNamePlaceholder()
+    {
+        return Yii::t('voskobovich/nestedsets', 'Node name');
     }
 
     /**
@@ -220,9 +230,18 @@ class Nestable extends Widget
 
         echo ButtonGroup::widget([
             'buttons' => [
-                ['label' => 'Добавить пункт', 'options' => ['data-action' => 'create-item', 'class' => 'btn btn-success']],
-                ['label' => 'Закрыть все', 'options' => ['data-action' => 'collapse-all', 'class' => 'btn btn-default']],
-                ['label' => 'Открыть все', 'options' => ['data-action' => 'expand-all', 'class' => 'btn btn-default']],
+                [
+                    'label' => Yii::t('voskobovich/nestedsets', 'Add node'),
+                    'options' => ['data-action' => 'create-item', 'class' => 'btn btn-success']
+                ],
+                [
+                    'label' => Yii::t('voskobovich/nestedsets', 'Collapse all'),
+                    'options' => ['data-action' => 'collapse-all', 'class' => 'btn btn-default']
+                ],
+                [
+                    'label' => Yii::t('voskobovich/nestedsets', 'Expand node'),
+                    'options' => ['data-action' => 'expand-all', 'class' => 'btn btn-default']
+                ],
             ]
         ]);
 
@@ -236,11 +255,9 @@ class Nestable extends Widget
     {
         echo Html::beginTag('div', ['class' => 'dd-nestable', 'id' => $this->id]);
 
-        $emptyItem = [
-            ['id' => 0, 'name' => 'Новая ссылка']
+        $menu = (count($this->_items) > 0) ? $this->_items : [
+            ['id' => 0, 'name' => $this->getNamePlaceholder()]
         ];
-
-        $menu = (count($this->_items) > 0) ? $this->_items : $emptyItem;
 
         $this->printLevel($menu);
 
@@ -270,13 +287,31 @@ class Nestable extends Widget
     {
         $htmlOptions = ['class' => 'dd-item'];
         $htmlOptions['data-id'] = !empty($item['id']) ? $item['id'] : '';
-        $htmlOptions['data-name'] = !empty($item['name']) ? $item['name'] : '';
 
         echo Html::beginTag('li', $htmlOptions);
-        echo Html::beginTag('div', ['class' => 'dd-handle']);
-        echo Html::endTag('div');
-        echo Html::beginTag('div', ['class' => 'dd-content']);
-        echo $item['name'];
+
+        echo Html::tag('div', '', ['class' => 'dd-handle']);
+        echo Html::tag('div', $item['name'], ['class' => 'dd-content']);
+
+        echo Html::beginTag('div', ['class' => 'dd-edit-panel']);
+        echo Html::input('text', null, $item['name'], ['class' => 'dd-input-name', 'placeholder' => $this->getNamePlaceholder()]);
+
+        echo ButtonGroup::widget([
+            'buttons' => [
+                [
+                    'label' => Yii::t('voskobovich/nestedsets', 'Save'),
+                    'options' => ['class' => 'btn btn-success btn-sm']
+                ],
+                [
+                    'label' => Yii::t('voskobovich/nestedsets', 'Remove'),
+                    'options' => ['class' => 'btn btn-danger btn-sm']
+                ],
+                [
+                    'label' => Yii::t('voskobovich/nestedsets', 'Additional mode'),
+                    'options' => ['class' => 'btn btn-default btn-sm']
+                ],
+            ]
+        ]);
         echo Html::endTag('div');
 
         if (isset($item['children']) && count($item['children'])) {

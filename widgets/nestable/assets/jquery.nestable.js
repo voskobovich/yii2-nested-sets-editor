@@ -55,7 +55,8 @@
         moveUrl: '',
         createUrl: '',
         updateUrl: '',
-        deleteUrl: ''
+        deleteUrl: '',
+        namePlaceholder: ''
     };
 
     function Plugin(element, options) {
@@ -79,14 +80,10 @@
             $.each(this.el.find(list.options.itemNodeName), function (k, el) {
                 // Вставляем иконки открытия\закрытия дочек
                 list.setParent($(el));
-
-                // Создаем форму для изменения свойств
-                list.createEditForm($(el));
             });
 
             // Вешаем эвенты клика для открытия панели редактирования
             list.setClickEvent(list.el);
-
 
             list.el.on('click', 'button', function (e) {
                 if (list.dragEl || (!hasTouch && e.button !== 0)) {
@@ -153,7 +150,6 @@
 
             el.on('click', '.' + list.options.contentClass, function (e) {
                 var owner = $(e.target).parent();
-                var name = owner.data('name');
                 var editPanel = owner.children('.' + list.options.editPanelClass);
 
                 if (!editPanel.hasClass(list.options.inputOpenClass)) {
@@ -163,8 +159,6 @@
 
                     editPanel.addClass(list.options.inputOpenClass);
                     editPanel.slideDown(100);
-
-                    editPanel.children('.' + list.options.inputNameClass).val(name);
                 }
                 else {
                     editPanel.removeClass(list.options.inputOpenClass);
@@ -189,11 +183,7 @@
             var inputName = document.createElement('input');
             inputName.type = 'text';
             inputName.className = this.options.inputNameClass;
-            inputName.placeholder = 'Введите имя ссылки (обязательное)';
-            //$(inputName).on('change', function () {
-            //    // Выгружаем структуру меню в поле формы
-            //    list.getStructure();
-            //});
+            inputName.placeholder = this.options.namePlaceholder;
             $(inputName).on('keyup', function () {
                 var input = $(this),
                     li = input.parent().parent(),
@@ -201,7 +191,6 @@
                     val = input.val();
 
                 content.html(val);
-                li.data('name', val);
             });
 
             $(div).append(inputName);
@@ -219,31 +208,19 @@
          * Создание нового пункта
          */
         createItem: function () {
-            var max = 0,
-                items;
-
-            items = this.el.find("." + this.options.itemClass);
-            items.each(function () {
-                var id = $(this).data('id');
-                max = (id > max) ? id : max;
-            });
-
-            max++;
-
             var div1 = document.createElement('div');
             div1.className = this.options.handleClass;
             div1.textContent = "Drag";
 
             var div2 = document.createElement('div');
             div2.className = this.options.contentClass;
-            div2.textContent = "Новая ссылка";
+            div2.textContent = this.options.namePlaceholder;
 
             var li = document.createElement('li');
             li.className = this.options.itemClass;
             $(li).append(div1);
             $(li).append(div2);
-            $(li).data('id', max);
-            $(li).data('name', 'Новая ссылка');
+            $(li).data('id', null);
 
             this.createEditForm($(li));
 
@@ -371,7 +348,7 @@
             }
         },
 
-        dragStop: function () {
+        dragStop: function (e) {
             // fix for zepto.js
             //this.placeEl.replaceWith(this.dragEl.children(this.options.itemNodeName + ':first').detach());
             var el = this.dragEl.children(this.options.itemNodeName).first();
@@ -380,7 +357,7 @@
 
             this.dragEl.remove();
 
-            this.nodeMoveRequest(el);
+            this.moveNodeRequest(el);
 
             this.el.trigger('change');
             if (this.hasNewRoot) {
@@ -393,7 +370,11 @@
          * Save new node position on server
          * @param el
          */
-        nodeMoveRequest: function (el) {
+        moveNodeRequest: function (el) {
+            if (typeof el.data('id') === "undefined" || !el.data('id')) {
+                return false;
+            }
+
             var prev = el.prev(this.options.itemNodeName);
             var next = el.next(this.options.itemNodeName);
             var parent = el.parents(this.options.itemNodeName);
