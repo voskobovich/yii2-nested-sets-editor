@@ -46,6 +46,7 @@
         inputNameClass: 'dd-input-name',
         noDragClass: 'dd-nodrag',
         emptyClass: 'dd-empty',
+        btnGroupClass: 'btn-group',
         //outputElement    : '#nestable-output',
         expandBtnHTML: '<button data-action="expand" class="dd-button" type="button"></button>',
         collapseBtnHTML: '<button data-action="collapse" class="dd-button" type="button"></button>',
@@ -167,42 +168,40 @@
             });
         },
 
-        /**
-         * Добавление формы редактирования
-         * @param li
-         */
-        createEditForm: function (li) {
-            var list = this;
-
-            /**
-             * Создаем формы редактирования
-             */
-            var div = document.createElement('div');
-            div.className = this.options.editPanelClass;
-
-            var inputName = document.createElement('input');
-            inputName.type = 'text';
-            inputName.className = this.options.inputNameClass;
-            inputName.placeholder = this.options.namePlaceholder;
-            $(inputName).on('keyup', function () {
-                var input = $(this),
-                    li = input.parent().parent(),
-                    content = li.children('.' + list.options.contentClass),
-                    val = input.val();
-
-                content.html(val);
-            });
-
-            $(div).append(inputName);
-
-            var inlineList = li.children(this.options.listNodeName);
-
-            if (inlineList.length > 0) {
-                inlineList.before(div)
-            } else {
-                li.append(div);
-            }
-        },
+        ///**
+        // * Добавление формы редактирования
+        // * @param li
+        // */
+        //createEditForm: function (li) {
+        //    var list = this;
+        //
+        //    // Div-обертка
+        //    var div = document.createElement('div');
+        //    div.className = this.options.editPanelClass;
+        //
+        //    // Input для названия
+        //    var inputName = document.createElement('input');
+        //    inputName.type = 'text';
+        //    inputName.className = this.options.inputNameClass;
+        //    inputName.placeholder = this.options.namePlaceholder;
+        //    $(inputName).on('keyup', function () {
+        //        var input = $(this),
+        //            li = input.parent().parent(),
+        //            content = li.children('.' + list.options.contentClass),
+        //            val = input.val();
+        //
+        //        content.html(val);
+        //    });
+        //    $(div).append(inputName);
+        //
+        //    var inlineList = li.children(this.options.listNodeName);
+        //
+        //    if (inlineList.length > 0) {
+        //        inlineList.before(div)
+        //    } else {
+        //        li.append(div);
+        //    }
+        //},
 
         /**
          * Создание нового пункта
@@ -222,7 +221,7 @@
             $(li).append(div2);
             $(li).data('id', null);
 
-            this.createEditForm($(li));
+            //this.createEditForm($(li));
 
             this.el.find(this.options.listNodeName).eq(0).append(li);
 

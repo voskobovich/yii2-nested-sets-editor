@@ -61,6 +61,12 @@ class Nestable extends Widget
     public $updateUrl;
 
     /**
+     * Url to page additional update model
+     * @var string
+     */
+    public $additionalUpdateUrl;
+
+    /**
      * Url to DeleteNodeAction
      * @var string
      */
