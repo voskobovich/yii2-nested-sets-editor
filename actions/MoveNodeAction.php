@@ -40,11 +40,11 @@ class MoveNodeAction extends Action
     public function run($id, $lft, $rgt, $par)
     {
         if (null == $this->modelClass) {
-            throw new InvalidConfigException("No 'modelClass' supplied on action initialization.");
+            throw new InvalidConfigException('Param "modelClass" must be contain model name with namespace.');
         }
 
         if (null == $this->behaviorName) {
-            throw new InvalidConfigException("No 'behaviorName' supplied on action initialization.");
+            throw new InvalidConfigException('Param "behaviorName" must be contain behavior key in list all behaviors on model.');
         }
 
         /** @var ActiveRecord $model */
@@ -53,7 +53,11 @@ class MoveNodeAction extends Action
         $behavior = $model->getBehavior($this->behaviorName);
 
         if ($behavior == null) {
-            throw new InvalidConfigException("No 'behaviorName' supplied on action initialization.");
+            throw new InvalidConfigException('Behavior "' . $this->behaviorName . '" not found');
+        }
+
+        if (!$behavior instanceof NestedSetsBehavior) {
+            throw new InvalidConfigException('Behavior must be implemented "voskobovich\nestedsets\behaviors\NestedSetsBehavior"');
         }
 
         /*
@@ -84,11 +88,11 @@ class MoveNodeAction extends Action
          * Calculate the left/right change
          */
         if (null == $lftModel) {
-            $currentModel->nodeMove((($parentModel ? $parentModel->{$behavior->leftAttribute} : 0) + 1), $depthDelta);
+            $currentModel->moveNode((($parentModel ? $parentModel->{$behavior->leftAttribute} : 0) + 1), $depthDelta);
         } else if (null == $rgtModel) {
-            $currentModel->nodeMove((($lftModel ? $lftModel->{$behavior->rightAttribute} : 0) + 1), $depthDelta);
+            $currentModel->moveNode((($lftModel ? $lftModel->{$behavior->rightAttribute} : 0) + 1), $depthDelta);
         } else {
-            $currentModel->nodeMove(($rgtModel ? $rgtModel->{$behavior->leftAttribute} : 0), $depthDelta);
+            $currentModel->moveNode(($rgtModel ? $rgtModel->{$behavior->leftAttribute} : 0), $depthDelta);
         }
 
         /*

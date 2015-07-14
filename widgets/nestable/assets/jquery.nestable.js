@@ -371,7 +371,7 @@
             }
         },
 
-        dragStop: function (e) {
+        dragStop: function () {
             // fix for zepto.js
             //this.placeEl.replaceWith(this.dragEl.children(this.options.itemNodeName + ':first').detach());
             var el = this.dragEl.children(this.options.itemNodeName).first();

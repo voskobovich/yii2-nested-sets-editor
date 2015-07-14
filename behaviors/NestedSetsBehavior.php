@@ -14,7 +14,7 @@ class NestedSetsBehavior extends \creocoder\nestedsets\NestedSetsBehavior
      * @param integer $value
      * @param integer $depth
      */
-    public function nodeMove($value, $depth)
+    public function moveNode($value, $depth)
     {
         $this->node = $this->owner;
         parent::moveNode($value, $depth);
