@@ -2,9 +2,16 @@
 
 namespace voskobovich\nestedsets\widgets\nestable;
 
+use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
+use Yii;
+use yii\base\InvalidConfigException;
 use yii\base\Widget;
+use yii\bootstrap\ButtonGroup;
+use yii\db\ActiveRecord;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\helpers\Json;
+use yii\helpers\Url;
 
 /**
  * Class Nestable
@@ -16,30 +23,54 @@ class Nestable extends Widget
      * Идентификатор виджета
      * @var string
      */
-    public $id = NULL;
+    public $id;
 
     /**
      * Модель данных
      * @var array
      */
-    public $model = NULL;
+    public $modelClass;
 
     /**
-     * Имя атрибута в котором хранятся данные
+     * Behavior key in list all behaviors on model
      * @var string
      */
-    public $attribute = 'data';
+    public $behaviorName;
 
     /**
-     * @var array native Chosen plugin options.
+     * @var array.
      */
-    public $options = [];
+    public $pluginOptions = [];
+
+    /**
+     * Url to MoveNodeAction
+     * @var string
+     */
+    public $moveUrl;
+
+    /**
+     * Url to CreateNodeAction
+     * @var string
+     */
+    public $createUrl;
+
+    /**
+     * Url to UpdateNodeAction
+     * @var string
+     */
+    public $updateUrl;
+
+    /**
+     * Url to DeleteNodeAction
+     * @var string
+     */
+    public $deleteUrl;
 
     /**
      * Структура меню в php array формате
      * @var array
      */
-    private $_data = [];
+    private $_items = [];
 
     /**
      * Инициализация плагина
@@ -52,9 +83,58 @@ class Nestable extends Widget
             $this->id = $this->getId();
         }
 
-        if (!empty($this->model) && !empty($this->model->{$this->attribute})) {
-            $this->_data = Json::decode($this->model->{$this->attribute});
+        if ($this->modelClass == null) {
+            throw new InvalidConfigException('Param "modelClass" must be contain model name');
         }
+
+        if (null == $this->behaviorName) {
+            throw new InvalidConfigException("No 'behaviorName' supplied on action initialization.");
+        }
+
+        /** @var ActiveRecord $model */
+        $model = new $this->modelClass;
+        /** @var NestedSetsBehavior $behavior */
+        $behavior = $model->getBehavior($this->behaviorName);
+
+        $items = $model::find()
+            ->orderBy([$behavior->leftAttribute => SORT_ASC])
+            ->asArray()
+            ->all();
+        $this->_items = $this->prepareItems($items);
+    }
+
+    /**
+     * @param $items
+     * @return array
+     */
+    private function prepareItems($items)
+    {
+        $stack = [];
+        $arraySet = [];
+
+        foreach ($items as $intKey => $arrValues) {
+            $stackSize = count($stack);
+            while ($stackSize > 0 && $stack[$stackSize - 1]['rgt'] < $arrValues['lft']) {
+                array_pop($stack);
+                $stackSize--;
+            }
+
+            $link =& $arraySet;
+            for ($i = 0; $i < $stackSize; $i++) {
+                $link =& $link[$stack[$i]['index']]['children']; //navigate to the proper children array
+            }
+            $tmp = array_push($link, [
+                'id' => $arrValues['id'],
+                'name' => $arrValues['name'],
+                'children' => []
+            ]);
+            array_push($stack, [
+                'index' => $tmp - 1,
+                'rgt' => $arrValues['rgt']
+            ]);
+        }
+
+        return $arraySet;
     }
 
     /**
@@ -62,12 +142,25 @@ class Nestable extends Widget
      */
     public function run()
     {
+        $this->registerAssets();
+
+        $this->actionButtons();
+        $this->renderMenu();
+        $this->actionButtons();
+    }
+
+    /**
+     * Register Asset manager
+     */
+    private function registerAssets()
+    {
         NestableAsset::register($this->getView());
 
         $view = $this->getView();
 
-        $options = empty($this->options) ? '' : Json::encode($this->options);
-        $view->registerJs("$('#{$this->id}').nestable({$options});");
+        $pluginOptions = ArrayHelper::merge($this->pluginOptions, $this->getDefaultPluginOptions());
+        $pluginOptions = Json::encode($pluginOptions);
+        $view->registerJs("$('#{$this->id}').nestable({$pluginOptions});");
 
         $view->registerJs("
 			$('.{$this->id}-nestable-menu').on('click', function(e) {
@@ -84,10 +177,38 @@ class Nestable extends Widget
 				return false;
 			});
 		");
+    }
 
-        $this->actionButtons();
-        $this->renderMenu();
-        $this->actionButtons();
+    /**
+     * Generate default plugin options
+     * @return array
+     */
+    private function getDefaultPluginOptions()
+    {
+        $options = [
+            'moveUrl' => $this->moveUrl,
+            'createUrl' => $this->createUrl,
+            'updateUrl' => $this->updateUrl,
+            'deleteUrl' => $this->deleteUrl,
+        ];
+
+        $controller = Yii::$app->controller;
+        if ($controller) {
+            if (!$options['moveUrl']) {
+                $options['moveUrl'] = Url::to(["{$controller->id}/moveNode"]);
+            }
+            if (!$options['createUrl']) {
+                $options['createUrl'] = Url::to(["{$controller->id}/createNode"]);
+            }
+            if (!$options['updateUrl']) {
+                $options['updateUrl'] = Url::to(["{$controller->id}/updateNode"]);
+            }
+            if (!$options['deleteUrl']) {
+                $options['deleteUrl'] = Url::to(["{$controller->id}/deleteNode"]);
+            }
+        }
+
+        return $options;
     }
 
     /**
@@ -97,13 +218,13 @@ class Nestable extends Widget
     {
         echo Html::beginTag('div', ['class' => "{$this->id}-nestable-menu"]);
 
-//        echo ButtonGroup::widget([
-//            'buttons' => [
-//                ['label' => 'Добавить пункт', 'options'=>['data-action'=>'create-item', 'class'=>'btn btn-default']],
-//                ['label' => 'Закрыть все', 'options'=>['data-action'=>'collapse-all', 'class'=>'btn btn-default']],
-//                ['label' => 'Открыть все', 'options'=>['data-action'=>'expand-all', 'class'=>'btn btn-default']],
-//            ]
-//        ]);
+        echo ButtonGroup::widget([
+            'buttons' => [
+                ['label' => 'Добавить пункт', 'options' => ['data-action' => 'create-item', 'class' => 'btn btn-success']],
+                ['label' => 'Закрыть все', 'options' => ['data-action' => 'collapse-all', 'class' => 'btn btn-default']],
+                ['label' => 'Открыть все', 'options' => ['data-action' => 'expand-all', 'class' => 'btn btn-default']],
+            ]
+        ]);
 
         echo Html::endTag('div');
     }
@@ -116,10 +237,10 @@ class Nestable extends Widget
         echo Html::beginTag('div', ['class' => 'dd-nestable', 'id' => $this->id]);
 
         $emptyItem = [
-            ['id' => 0, 'name' => 'Новая ссылка', 'url' => '', 'bizrule' => '']
+            ['id' => 0, 'name' => 'Новая ссылка']
         ];
 
-        $menu = (count($this->_data) > 0) ? $this->_data : $emptyItem;
+        $menu = (count($this->_items) > 0) ? $this->_items : $emptyItem;
 
         $this->printLevel($menu);
 
@@ -134,8 +255,9 @@ class Nestable extends Widget
     {
         echo Html::beginTag('ol', ['class' => 'dd-list']);
 
-        foreach ($level as $item)
+        foreach ($level as $item) {
             $this->printItem($item);
+        }
 
         echo Html::endTag('ol');
     }
@@ -149,8 +271,6 @@ class Nestable extends Widget
         $htmlOptions = ['class' => 'dd-item'];
         $htmlOptions['data-id'] = !empty($item['id']) ? $item['id'] : '';
         $htmlOptions['data-name'] = !empty($item['name']) ? $item['name'] : '';
-        $htmlOptions['data-url'] = !empty($item['url']) ? $item['url'] : '';
-        $htmlOptions['data-bizrule'] = !empty($item['bizrule']) ? $item['bizrule'] : '';
 
         echo Html::beginTag('li', $htmlOptions);
         echo Html::beginTag('div', ['class' => 'dd-handle']);
@@ -159,8 +279,9 @@ class Nestable extends Widget
         echo $item['name'];
         echo Html::endTag('div');
 
-        if (isset($item['children']) && count($item['children']))
+        if (isset($item['children']) && count($item['children'])) {
             $this->printLevel($item['children']);
+        }
 
         echo Html::endTag('li');
     }

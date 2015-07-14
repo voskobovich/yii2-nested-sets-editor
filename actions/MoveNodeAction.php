@@ -10,10 +10,10 @@ use yii\db\ActiveRecord;
 use yii\web\Response;
 
 /**
- * Class NodeMoveAction
+ * Class MoveNodeAction
  * @package voskobovich\nestedsets\actions
  */
-class NodeMoveAction extends Action
+class MoveNodeAction extends Action
 {
     /**
      * Class to use to locate the supplied data ids
@@ -22,6 +22,7 @@ class NodeMoveAction extends Action
     public $modelClass;
 
     /**
+     * Behavior key in list all behaviors on model
      * @var string
      */
     public $behaviorName;
@@ -36,7 +37,7 @@ class NodeMoveAction extends Action
      * @return array
      * @throws InvalidConfigException
      */
-    public function run($id = 0, $lft = 0, $rgt = 0, $par = 0)
+    public function run($id, $lft, $rgt, $par)
     {
         if (null == $this->modelClass) {
             throw new InvalidConfigException("No 'modelClass' supplied on action initialization.");
@@ -58,14 +59,13 @@ class NodeMoveAction extends Action
         /*
          * Locate the supplied model, left, right and parent models
          */
-        /** @var ActiveRecord $currentModel */
-        $currentModel = $model::find()->where(['id' => $id])->one();
-        /** @var ActiveRecord $lftModel */
-        $lftModel = $model::find()->where(['id' => $lft])->one();
-        /** @var ActiveRecord $rgtModel */
-        $rgtModel = $model::find()->where(['id' => $rgt])->one();
-        /** @var ActiveRecord $parentModel */
-        $parentModel = $model::find()->where(['id' => $par])->one();
+        $pk = $model->getTableSchema()->primaryKey[0];
+
+        /** @var ActiveRecord|NestedSetsBehavior $currentModel */
+        $currentModel = $model::find()->where([$pk => $id])->one();
+        $lftModel = $model::find()->where([$pk => $lft])->one();
+        $rgtModel = $model::find()->where([$pk => $rgt])->one();
+        $parentModel = $model::find()->where([$pk => $par])->one();
 
         /*
          * Calculate the depth change
@@ -74,7 +74,7 @@ class NodeMoveAction extends Action
             $depthDelta = -1;
         } else if (null == ($parent = $currentModel->parents(1)->one())) {
             $depthDelta = 0;
-        } else if ($parent->id != $parentModel->id) {
+        } else if ($parent->{$pk} != $parentModel->{$pk}) {
             $depthDelta = $parentModel->{$behavior->depthAttribute} - $currentModel->{$behavior->depthAttribute} + 1;
         } else {
             $depthDelta = 0;
@@ -101,7 +101,7 @@ class NodeMoveAction extends Action
          */
         return [
             'updated' => [
-                'id' => $currentModel->id,
+                'id' => $currentModel->{$pk},
                 'depth' => $currentModel->{$behavior->depthAttribute},
                 'lft' => $currentModel->{$behavior->leftAttribute},
                 'rgt' => $currentModel->{$behavior->rightAttribute},

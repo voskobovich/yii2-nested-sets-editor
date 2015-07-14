@@ -27,8 +27,8 @@
 
     var eStart = hasTouch ? 'touchstart' : 'mousedown',
         eMove = hasTouch ? 'touchmove' : 'mousemove',
-        eEnd = hasTouch ? 'touchend' : 'mouseup';
-    eCancel = hasTouch ? 'touchcancel' : 'mouseup';
+        eEnd = hasTouch ? 'touchend' : 'mouseup',
+        eCancel = hasTouch ? 'touchcancel' : 'mouseup';
 
     var defaults = {
         listNodeName: 'ol',
@@ -44,16 +44,18 @@
         collapsedClass: 'dd-collapsed',
         placeClass: 'dd-placeholder',
         inputNameClass: 'dd-input-name',
-        inputUrlClass: 'dd-input-url',
-        inputBuzRuleClass: 'dd-input-bizrule',
         noDragClass: 'dd-nodrag',
         emptyClass: 'dd-empty',
-        outputElement: '#nestable-output',
+        //outputElement    : '#nestable-output',
         expandBtnHTML: '<button data-action="expand" class="dd-button" type="button"></button>',
         collapseBtnHTML: '<button data-action="collapse" class="dd-button" type="button"></button>',
         group: 0,
         maxDepth: 5,
-        threshold: 20
+        threshold: 20,
+        moveUrl: '',
+        createUrl: '',
+        updateUrl: '',
+        deleteUrl: ''
     };
 
     function Plugin(element, options) {
@@ -85,13 +87,6 @@
             // Вешаем эвенты клика для открытия панели редактирования
             list.setClickEvent(list.el);
 
-            // Выгружаем структуру меню в поле формы
-            list.getStructure();
-
-            // Обновление данных при изменении структуры
-            this.el.on('change', function () {
-                list.getStructure();
-            });
 
             list.el.on('click', 'button', function (e) {
                 if (list.dragEl || (!hasTouch && e.button !== 0)) {
@@ -150,51 +145,6 @@
         },
 
         /**
-         * Выгрузка данных меню в поле формы
-         */
-        getStructure: function () {
-            var output = $(this.options.outputElement);
-            var data = this.serialize();
-
-            if (window.JSON) {
-                output.val(window.JSON.stringify(data));
-            } else {
-                alert('JSON browser support required for this demo.');
-            }
-        },
-
-        /**
-         * Сериализация данных
-         * @returns {*}
-         */
-        serialize: function () {
-            var data,
-                depth = 0,
-                list = this;
-            var step = function (level, depth) {
-                var array = [],
-                    items = level.children(list.options.itemNodeName);
-                items.each(function () {
-                    var li = $(this),
-                        item = $.extend({}, li.data()),
-                        sub = li.children(list.options.listNodeName);
-
-                    if (sub.length) {
-                        item.children = step(sub, depth + 1);
-                    }
-
-                    if (item['name'] != '') {
-                        array.push(item);
-                    }
-                });
-                return array;
-            };
-            data = step(list.el.find(list.options.listNodeName).first(), depth);
-
-            return data;
-        },
-
-        /**
          * Вешаем onClick на тело пункта
          * @returns {*}
          */
@@ -204,20 +154,17 @@
             el.on('click', '.' + list.options.contentClass, function (e) {
                 var owner = $(e.target).parent();
                 var name = owner.data('name');
-                var url = owner.data('url');
-                var bizrule = owner.data('bizrule');
                 var editPanel = owner.children('.' + list.options.editPanelClass);
 
                 if (!editPanel.hasClass(list.options.inputOpenClass)) {
-                    $('.' + list.options.editPanelClass).slideUp(100);
-                    $('.' + list.options.editPanelClass).removeClass(list.options.inputOpenClass);
+                    $('.' + list.options.editPanelClass)
+                        .slideUp(100)
+                        .removeClass(list.options.inputOpenClass);
 
                     editPanel.addClass(list.options.inputOpenClass);
                     editPanel.slideDown(100);
 
                     editPanel.children('.' + list.options.inputNameClass).val(name);
-                    editPanel.children('.' + list.options.inputUrlClass).val(url);
-                    editPanel.children('.' + list.options.inputBuzRuleClass).val(bizrule);
                 }
                 else {
                     editPanel.removeClass(list.options.inputOpenClass);
@@ -243,10 +190,10 @@
             inputName.type = 'text';
             inputName.className = this.options.inputNameClass;
             inputName.placeholder = 'Введите имя ссылки (обязательное)';
-            $(inputName).on('change', function () {
-                // Выгружаем структуру меню в поле формы
-                list.getStructure();
-            });
+            //$(inputName).on('change', function () {
+            //    // Выгружаем структуру меню в поле формы
+            //    list.getStructure();
+            //});
             $(inputName).on('keyup', function () {
                 var input = $(this),
                     li = input.parent().parent(),
@@ -257,39 +204,7 @@
                 li.data('name', val);
             });
 
-            var inputUrl = document.createElement('input');
-            inputUrl.type = 'text';
-            inputUrl.className = this.options.inputUrlClass;
-            inputUrl.placeholder = 'Введите адрес ссылки';
-            $(inputUrl).on('change', function () {
-                // Выгружаем структуру меню в поле формы
-                list.getStructure();
-            });
-            $(inputUrl).on('keyup', function () {
-                var input = $(this),
-                    li = input.parent().parent();
-
-                li.data('url', input.val());
-            });
-
-            var inputBizRule = document.createElement('input');
-            inputBizRule.type = 'text';
-            inputBizRule.className = this.options.inputBuzRuleClass;
-            inputBizRule.placeholder = 'Введите правило показа';
-            $(inputBizRule).on('change', function () {
-                // Выгружаем структуру меню в поле формы
-                list.getStructure();
-            });
-            $(inputBizRule).on('keyup', function () {
-                var input = $(this),
-                    li = input.parent().parent();
-
-                li.data('bizrule', input.val());
-            });
-
             $(div).append(inputName);
-            $(div).append(inputUrl);
-            $(div).append(inputBizRule);
 
             var inlineList = li.children(this.options.listNodeName);
 
@@ -329,23 +244,19 @@
             $(li).append(div2);
             $(li).data('id', max);
             $(li).data('name', 'Новая ссылка');
-            $(li).data('url', '');
-            $(li).data('bizrule', '');
 
             this.createEditForm($(li));
 
             this.el.find(this.options.listNodeName).eq(0).append(li);
 
             // Автооткрытие панели свойств пункта
-            $('.' + this.options.editPanelClass).slideUp(100);
-            $('.' + this.options.editPanelClass).removeClass(this.options.inputOpenClass);
+            $('.' + this.options.editPanelClass)
+                .slideUp(100)
+                .removeClass(this.options.inputOpenClass);
 
             var editPanel = $(li).children('.' + this.options.editPanelClass);
             editPanel.addClass(this.options.inputOpenClass);
             editPanel.slideDown(100);
-
-            // Выгружаем структуру меню в поле формы
-            this.getStructure();
         },
 
         reset: function () {
@@ -468,11 +379,37 @@
             this.placeEl.replaceWith(el);
 
             this.dragEl.remove();
+
+            this.nodeMoveRequest(el);
+
             this.el.trigger('change');
             if (this.hasNewRoot) {
                 this.dragRootEl.trigger('change');
             }
             this.reset();
+        },
+
+        /**
+         * Save new node position on server
+         * @param el
+         */
+        nodeMoveRequest: function (el) {
+            var prev = el.prev(this.options.itemNodeName);
+            var next = el.next(this.options.itemNodeName);
+            var parent = el.parents(this.options.itemNodeName);
+
+            $.ajax({
+                url: this.options.moveUrl,
+                context: document.body,
+                data: {
+                    id: el.data('id'),
+                    par: $(parent).data('id'),
+                    lft: (prev.length ? prev.data('id') : 0),
+                    rgt: (next.length ? next.data('id') : 0)
+                }
+            }).fail(function (jqXHR) {
+                alert(jqXHR.responseText);
+            });
         },
 
         dragMove: function (e) {
