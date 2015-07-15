@@ -84,8 +84,8 @@
             });
 
             // Вешаем эвенты клика для открытия панели редактирования
-            tree.setClickEventOnNode(tree.el);
-            tree.setClickEventOnActionButtons(tree.el);
+            tree.setPanelEvents(tree.el);
+            tree.setActionButtonsEvents(tree.el);
 
             tree.el.on('click', 'button', function (e) {
                 if (tree.dragEl || (!hasTouch && e.button !== 0)) {
@@ -147,8 +147,16 @@
          * Вешаем onClick на тело пункта
          * @returns {*}
          */
-        setClickEventOnNode: function (el) {
+        setPanelEvents: function (el) {
             var tree = this;
+
+            el.on('keyup', '.' + tree.options.inputNameClass, function (e) {
+                var target = $(e.target),
+                    li = target.closest('.' + tree.options.itemClass),
+                    content = li.children('.' + tree.options.contentClass);
+
+                content.html(target.val());
+            });
 
             el.on('click', '.' + tree.options.contentClass, function (e) {
                 var owner = $(e.target).parent();
@@ -173,7 +181,7 @@
          * Вешаем onClick на кнопки управления нодой
          * @returns {*}
          */
-        setClickEventOnActionButtons: function (el) {
+        setActionButtonsEvents: function (el) {
             var tree = this;
 
             el.on('click', '.' + tree.options.btnGroupClass + ' [data-action="save"]', function (e) {
@@ -449,7 +457,6 @@
                 method: 'POST',
                 context: document.body,
                 data: {
-                    id: id,
                     name: name.val()
                 }
             }).success(function (data, textStatus, jqXHR) {

@@ -75,7 +75,7 @@ class UpdateNodeAction extends Action
         if (!$model->validate()) {
             throw new HttpException($model->getFirstError($this->nameAttribute));
         }
-        $model->update(true, $this->nameAttribute);
+        $model->update(true, [$this->nameAttribute]);
 
         return null;
     }
