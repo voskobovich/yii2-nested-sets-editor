@@ -180,7 +180,7 @@
                 var target = $(e.target),
                     li = target.closest('.' + tree.options.itemClass);
 
-                console.log('save', li);
+                tree.updateNodeRequest(li);
             });
 
             el.on('click', '.' + tree.options.btnGroupClass + ' [data-action="delete"]', function (e) {
@@ -406,13 +406,12 @@
             var parent = el.parents(this.options.itemNodeName);
 
             $.ajax({
-                url: this.options.moveUrl,
+                url: this.options.moveUrl + '?id=' + id,
                 context: document.body,
                 data: {
-                    id: id,
-                    par: $(parent).data('id'),
-                    lft: (prev.length ? prev.data('id') : 0),
-                    rgt: (next.length ? next.data('id') : 0)
+                    parent: $(parent).data('id'),
+                    left: (prev.length ? prev.data('id') : 0),
+                    right: (next.length ? next.data('id') : 0)
                 }
             }).fail(function (jqXHR) {
                 alert(jqXHR.responseText);
@@ -426,20 +425,38 @@
             }
 
             $.ajax({
-                url: this.options.deleteUrl,
+                url: this.options.deleteUrl + '?id=' + id,
+                method: 'POST',
                 context: document.body,
-                data: {
-                    id: id
-                }
             }).success(function (data, textStatus, jqXHR) {
-                if (data.status) {
-                    el.remove();
-                }
+                el.remove();
             }).fail(function (jqXHR) {
                 alert(jqXHR.responseText);
             });
         },
 
+        updateNodeRequest: function (el) {
+            var id = el.data('id');
+            if (typeof id === "undefined" || !id) {
+                return false;
+            }
+
+            var name = el.find('.' + this.options.inputNameClass);
+
+            $.ajax({
+                url: this.options.updateUrl + '?id=' + id,
+                method: 'POST',
+                context: document.body,
+                data: {
+                    id: id,
+                    name: name.val()
+                }
+            }).success(function (data, textStatus, jqXHR) {
+                // Скрыть панель
+            }).fail(function (jqXHR) {
+                alert(jqXHR.responseText);
+            });
+        },
 
         dragMove: function (e) {
             var tree, parent, prev, next, depth,

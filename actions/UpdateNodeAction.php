@@ -4,22 +4,30 @@ namespace voskobovich\nestedsets\actions;
 
 use Yii;
 use yii\base\Action;
+use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
 use yii\db\ActiveRecord;
+use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 
 /**
- * Class DeleteNodeAction
+ * Class UpdateNodeAction
  * @package voskobovich\nestedsets\actions
  */
-class DeleteNodeAction extends Action
+class UpdateNodeAction extends Action
 {
     /**
      * Class to use to locate the supplied data ids
      * @var string
      */
     public $modelClass;
+
+    /**
+     * Attribute for name in model
+     * @var string
+     */
+    public $nameAttribute = 'name';
 
     /**
      * Behavior key in list all behaviors on model
@@ -43,7 +51,7 @@ class DeleteNodeAction extends Action
      * @param integer $id the primaryKey of the moved node
      * @return array
      * @throws InvalidConfigException
-     * @throws NotFoundHttpException
+     * @throws Exception
      */
     public function run($id)
     {
@@ -62,7 +70,12 @@ class DeleteNodeAction extends Action
             throw new NotFoundHttpException('Node not found');
         }
 
-        $model->deleteWithChildren();
+        $name = Yii::$app->request->post('name');
+        $model->{$this->nameAttribute} = $name;
+        if (!$model->validate()) {
+            throw new HttpException($model->getFirstError($this->nameAttribute));
+        }
+        $model->update(true, $this->nameAttribute);
 
         return null;
     }

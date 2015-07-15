@@ -29,9 +29,10 @@
   },
   "autoload": {
     "psr-4": {
-      "voskobovich\\nestedsets\\widgets\\nestable\\": "widgets/nestable",
+      "voskobovich\\nestedsets\\actions\\": "actions",
       "voskobovich\\nestedsets\\behaviors\\": "behaviors",
-      "voskobovich\\nestedsets\\actions\\": "actions"
+      "voskobovich\\nestedsets\\forms\\": "forms",
+      "voskobovich\\nestedsets\\widgets\\nestable\\": "widgets/nestable"
     }
   }
 }
