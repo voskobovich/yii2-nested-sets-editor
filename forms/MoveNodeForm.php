@@ -64,10 +64,6 @@ class MoveNodeForm extends Model
             throw new InvalidConfigException('Behavior must be implemented "voskobovich\nestedsets\behaviors\NestedSetsBehavior"');
         }
 
-        $lft = Yii::$app->request->post('lft', false);
-        $rgt = Yii::$app->request->post('rgt', false);
-        $par = Yii::$app->request->post('par', false);
-
         /*
          * Locate the supplied model, left, right and parent models
          */
@@ -75,9 +71,9 @@ class MoveNodeForm extends Model
 
         /** @var ActiveRecord|NestedSetsBehavior $currentModel */
         $currentModel = $model::find()->where([$pkAttribute => $this->id])->one();
-        $lftModel = $model::find()->where([$pkAttribute => $lft])->one();
-        $rgtModel = $model::find()->where([$pkAttribute => $rgt])->one();
-        $parentModel = $model::find()->where([$pkAttribute => $par])->one();
+        $lftModel = $model::find()->where([$pkAttribute => $this->left])->one();
+        $rgtModel = $model::find()->where([$pkAttribute => $this->right])->one();
+        $parentModel = $model::find()->where([$pkAttribute => $this->parent])->one();
 
         /*
          * Calculate the depth change
