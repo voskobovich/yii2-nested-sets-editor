@@ -110,7 +110,7 @@ class Nestable extends Widget
             throw new InvalidConfigException("No 'behaviorName' supplied on action initialization.");
         }
 
-        if (null == $this->advancedUpdateRoute && !($controller = Yii::$app->controller)) {
+        if (null == $this->advancedUpdateRoute && ($controller = Yii::$app->controller)) {
             $this->advancedUpdateRoute = "{$controller->id}/update";
         }
 
@@ -203,7 +203,8 @@ class Nestable extends Widget
 
         $view->registerJs("
 			$('.{$this->id}-nestable-menu').on('click', function(e) {
-				var target = $(e.target), action = target.data('action');
+				var target = $(e.target),
+				    action = target.data('action');
 
 				switch (action) {
 					case 'expand-all': $('#{$this->id}').nestable('expandAll');
@@ -226,6 +227,7 @@ class Nestable extends Widget
     {
         $options = [
             'namePlaceholder' => $this->getPlaceholderForName(),
+            'deleteAlert' => Yii::t('voskobovich/nestedsets', 'The nobe will be removed together with the children. Are you sure?'),
         ];
 
         $controller = Yii::$app->controller;
@@ -258,15 +260,24 @@ class Nestable extends Widget
             'buttons' => [
                 [
                     'label' => Yii::t('voskobovich/nestedsets', 'Add node'),
-                    'options' => ['data-action' => 'create-item', 'class' => 'btn btn-success']
+                    'options' => [
+                        'data-action' => 'create-item',
+                        'class' => 'btn btn-success'
+                    ]
                 ],
                 [
                     'label' => Yii::t('voskobovich/nestedsets', 'Collapse all'),
-                    'options' => ['data-action' => 'collapse-all', 'class' => 'btn btn-default']
+                    'options' => [
+                        'data-action' => 'collapse-all',
+                        'class' => 'btn btn-default'
+                    ]
                 ],
                 [
                     'label' => Yii::t('voskobovich/nestedsets', 'Expand node'),
-                    'options' => ['data-action' => 'expand-all', 'class' => 'btn btn-default']
+                    'options' => [
+                        'data-action' => 'expand-all',
+                        'class' => 'btn btn-default'
+                    ]
                 ],
             ]
         ]);
@@ -313,7 +324,6 @@ class Nestable extends Widget
     {
         $htmlOptions = ['class' => 'dd-item'];
         $htmlOptions['data-id'] = !empty($item['id']) ? $item['id'] : '';
-        $htmlOptions['data-update-url'] = !empty($item['update-url']) ? $item['update-url'] : '';
 
         echo Html::beginTag('li', $htmlOptions);
 
@@ -327,15 +337,22 @@ class Nestable extends Widget
             'buttons' => [
                 [
                     'label' => Yii::t('voskobovich/nestedsets', 'Save'),
-                    'options' => ['class' => 'btn btn-success btn-sm']
+                    'options' => [
+                        'data-action' => 'save',
+                        'class' => 'btn btn-success btn-sm',
+                    ]
                 ],
+                Html::a(Yii::t('voskobovich/nestedsets', 'Advanced editing'), $item['update-url'], [
+                    'data-action' => 'advanced-editing',
+                    'class' => 'btn btn-default btn-sm',
+                    'target' => '_blank'
+                ]),
                 [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Advanced editing'),
-                    'options' => ['class' => 'btn btn-default btn-sm']
-                ],
-                [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Remove'),
-                    'options' => ['class' => 'btn btn-danger btn-sm']
+                    'label' => Yii::t('voskobovich/nestedsets', 'Delete'),
+                    'options' => [
+                        'data-action' => 'delete',
+                        'class' => 'btn btn-danger btn-sm'
+                    ]
                 ],
             ]
         ]);

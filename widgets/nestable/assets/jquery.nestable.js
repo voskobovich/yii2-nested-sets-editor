@@ -47,7 +47,6 @@
         noDragClass: 'dd-nodrag',
         emptyClass: 'dd-empty',
         btnGroupClass: 'btn-group',
-        //outputElement    : '#nestable-output',
         expandBtnHTML: '<button data-action="expand" class="dd-button" type="button"></button>',
         collapseBtnHTML: '<button data-action="collapse" class="dd-button" type="button"></button>',
         group: 0,
@@ -57,7 +56,8 @@
         createUrl: '',
         updateUrl: '',
         deleteUrl: '',
-        namePlaceholder: ''
+        namePlaceholder: '',
+        deleteAlert: 'The nobe will be removed together with the children. Are you sure?'
     };
 
     function Plugin(element, options) {
@@ -70,75 +70,76 @@
     Plugin.prototype = {
 
         init: function () {
-            var list = this;
+            var tree = this;
 
-            list.reset();
+            tree.reset();
 
-            list.el.data('nestable-group', this.options.group);
+            tree.el.data('nestable-group', this.options.group);
 
-            list.placeEl = $('<div class="' + list.options.placeClass + '"/>');
+            tree.placeEl = $('<div class="' + tree.options.placeClass + '"/>');
 
-            $.each(this.el.find(list.options.itemNodeName), function (k, el) {
+            $.each(this.el.find(tree.options.itemNodeName), function (k, el) {
                 // Вставляем иконки открытия\закрытия дочек
-                list.setParent($(el));
+                tree.setParent($(el));
             });
 
             // Вешаем эвенты клика для открытия панели редактирования
-            list.setClickEvent(list.el);
+            tree.setClickEventOnNode(tree.el);
+            tree.setClickEventOnActionButtons(tree.el);
 
-            list.el.on('click', 'button', function (e) {
-                if (list.dragEl || (!hasTouch && e.button !== 0)) {
+            tree.el.on('click', 'button', function (e) {
+                if (tree.dragEl || (!hasTouch && e.button !== 0)) {
                     return;
                 }
                 var target = $(e.currentTarget),
                     action = target.data('action'),
-                    item = target.parent(list.options.itemNodeName);
+                    item = target.parent(tree.options.itemNodeName);
                 if (action === 'collapse') {
-                    list.collapseItem(item);
+                    tree.collapseItem(item);
                 }
                 if (action === 'expand') {
-                    list.expandItem(item);
+                    tree.expandItem(item);
                 }
             });
 
             var onStartEvent = function (e) {
                 var handle = $(e.target);
-                if (!handle.hasClass(list.options.handleClass)) {
-                    if (handle.closest('.' + list.options.noDragClass).length) {
+                if (!handle.hasClass(tree.options.handleClass)) {
+                    if (handle.closest('.' + tree.options.noDragClass).length) {
                         return;
                     }
-                    handle = handle.closest('.' + list.options.handleClass);
+                    handle = handle.closest('.' + tree.options.handleClass);
                 }
-                if (!handle.length || list.dragEl || (!hasTouch && e.button !== 0) || (hasTouch && e.touches.length !== 1)) {
+                if (!handle.length || tree.dragEl || (!hasTouch && e.button !== 0) || (hasTouch && e.touches.length !== 1)) {
                     return;
                 }
                 e.preventDefault();
-                list.dragStart(hasTouch ? e.touches[0] : e);
+                tree.dragStart(hasTouch ? e.touches[0] : e);
             };
 
             var onMoveEvent = function (e) {
-                if (list.dragEl) {
+                if (tree.dragEl) {
                     e.preventDefault();
-                    list.dragMove(hasTouch ? e.touches[0] : e);
+                    tree.dragMove(hasTouch ? e.touches[0] : e);
                 }
             };
 
             var onEndEvent = function (e) {
-                if (list.dragEl) {
+                if (tree.dragEl) {
                     e.preventDefault();
-                    list.dragStop(hasTouch ? e.touches[0] : e);
+                    tree.dragStop(hasTouch ? e.touches[0] : e);
                 }
             };
 
             if (hasTouch) {
-                list.el[0].addEventListener(eStart, onStartEvent, false);
+                tree.el[0].addEventListener(eStart, onStartEvent, false);
                 window.addEventListener(eMove, onMoveEvent, false);
                 window.addEventListener(eEnd, onEndEvent, false);
                 window.addEventListener(eCancel, onEndEvent, false);
             } else {
-                list.el.on(eStart, onStartEvent);
-                list.w.on(eMove, onMoveEvent);
-                list.w.on(eEnd, onEndEvent);
+                tree.el.on(eStart, onStartEvent);
+                tree.w.on(eMove, onMoveEvent);
+                tree.w.on(eEnd, onEndEvent);
             }
         },
 
@@ -146,26 +147,51 @@
          * Вешаем onClick на тело пункта
          * @returns {*}
          */
-        setClickEvent: function (el) {
-            var list = this;
+        setClickEventOnNode: function (el) {
+            var tree = this;
 
-            el.on('click', '.' + list.options.contentClass, function (e) {
+            el.on('click', '.' + tree.options.contentClass, function (e) {
                 var owner = $(e.target).parent();
-                var editPanel = owner.children('.' + list.options.editPanelClass);
+                var editPanel = owner.children('.' + tree.options.editPanelClass);
 
-                if (!editPanel.hasClass(list.options.inputOpenClass)) {
-                    $('.' + list.options.editPanelClass)
+                if (!editPanel.hasClass(tree.options.inputOpenClass)) {
+                    $('.' + tree.options.editPanelClass)
                         .slideUp(100)
-                        .removeClass(list.options.inputOpenClass);
+                        .removeClass(tree.options.inputOpenClass);
 
-                    editPanel.addClass(list.options.inputOpenClass);
+                    editPanel.addClass(tree.options.inputOpenClass);
                     editPanel.slideDown(100);
                 }
                 else {
-                    editPanel.removeClass(list.options.inputOpenClass);
+                    editPanel.removeClass(tree.options.inputOpenClass);
                     editPanel.slideUp(100);
                 }
             });
+        },
+
+        /**
+         * Вешаем onClick на кнопки управления нодой
+         * @returns {*}
+         */
+        setClickEventOnActionButtons: function (el) {
+            var tree = this;
+
+            el.on('click', '.' + tree.options.btnGroupClass + ' [data-action="save"]', function (e) {
+                var target = $(e.target),
+                    li = target.closest('.' + tree.options.itemClass);
+
+                console.log('save', li);
+            });
+
+            el.on('click', '.' + tree.options.btnGroupClass + ' [data-action="delete"]', function (e) {
+                var target = $(e.target),
+                    li = target.closest('.' + tree.options.itemClass);
+
+                if (confirm(tree.options.deleteAlert)) {
+                    tree.deleteNodeRequest(li);
+                }
+            });
+
         },
 
         ///**
@@ -173,7 +199,7 @@
         // * @param li
         // */
         //createEditForm: function (li) {
-        //    var list = this;
+        //    var tree = this;
         //
         //    // Div-обертка
         //    var div = document.createElement('div');
@@ -187,7 +213,7 @@
         //    $(inputName).on('keyup', function () {
         //        var input = $(this),
         //            li = input.parent().parent(),
-        //            content = li.children('.' + list.options.contentClass),
+        //            content = li.children('.' + tree.options.contentClass),
         //            val = input.val();
         //
         //        content.html(val);
@@ -281,16 +307,16 @@
         },
 
         expandAll: function () {
-            var list = this;
-            list.el.find(list.options.itemNodeName).each(function () {
-                list.expandItem($(this));
+            var tree = this;
+            tree.el.find(tree.options.itemNodeName).each(function () {
+                tree.expandItem($(this));
             });
         },
 
         collapseAll: function () {
-            var list = this;
-            list.el.find(list.options.itemNodeName).each(function () {
-                list.collapseItem($(this));
+            var tree = this;
+            tree.el.find(tree.options.itemNodeName).each(function () {
+                tree.collapseItem($(this));
             });
         },
 
@@ -370,7 +396,8 @@
          * @param el
          */
         moveNodeRequest: function (el) {
-            if (typeof el.data('id') === "undefined" || !el.data('id')) {
+            var id = el.data('id');
+            if (typeof id === "undefined" || !id) {
                 return false;
             }
 
@@ -382,7 +409,7 @@
                 url: this.options.moveUrl,
                 context: document.body,
                 data: {
-                    id: el.data('id'),
+                    id: id,
                     par: $(parent).data('id'),
                     lft: (prev.length ? prev.data('id') : 0),
                     rgt: (next.length ? next.data('id') : 0)
@@ -392,8 +419,30 @@
             });
         },
 
+        deleteNodeRequest: function (el) {
+            var id = el.data('id');
+            if (typeof id === "undefined" || !id) {
+                return false;
+            }
+
+            $.ajax({
+                url: this.options.deleteUrl,
+                context: document.body,
+                data: {
+                    id: id
+                }
+            }).success(function (data, textStatus, jqXHR) {
+                if (data.status) {
+                    el.remove();
+                }
+            }).fail(function (jqXHR) {
+                alert(jqXHR.responseText);
+            });
+        },
+
+
         dragMove: function (e) {
-            var list, parent, prev, next, depth,
+            var tree, parent, prev, next, depth,
                 opt = this.options,
                 mouse = this.mouse;
 
@@ -453,20 +502,20 @@
                 // increase horizontal level if previous sibling exists and is not collapsed
                 if (mouse.distX > 0 && prev.length && !prev.hasClass(opt.collapsedClass)) {
                     // cannot increase level when item above is collapsed
-                    list = prev.find(opt.listNodeName).last();
+                    tree = prev.find(opt.listNodeName).last();
                     // check if depth limit has reached
                     depth = this.placeEl.parents(opt.listNodeName).length;
                     if (depth + this.dragDepth <= opt.maxDepth) {
                         // create new sub-level if one doesn't exist
-                        if (!list.length) {
-                            list = $('<' + opt.listNodeName + '/>').addClass(opt.listClass);
-                            list.append(this.placeEl);
-                            prev.append(list);
+                        if (!tree.length) {
+                            tree = $('<' + opt.listNodeName + '/>').addClass(opt.listClass);
+                            tree.append(this.placeEl);
+                            prev.append(tree);
                             this.setParent(prev);
                         } else {
                             // else append to next level up
-                            list = prev.children(opt.listNodeName).last();
-                            list.append(this.placeEl);
+                            tree = prev.children(opt.listNodeName).last();
+                            tree.append(this.placeEl);
                         }
                     }
                 }
@@ -525,9 +574,9 @@
                 parent = this.placeEl.parent();
                 // if empty create new list to replace empty placeholder
                 if (isEmpty) {
-                    list = $(document.createElement(opt.listNodeName)).addClass(opt.listClass);
-                    list.append(this.placeEl);
-                    this.pointEl.replaceWith(list);
+                    tree = $(document.createElement(opt.listNodeName)).addClass(opt.listClass);
+                    tree.append(this.placeEl);
+                    this.pointEl.replaceWith(tree);
                 }
                 else if (before) {
                     this.pointEl.before(this.placeEl);
