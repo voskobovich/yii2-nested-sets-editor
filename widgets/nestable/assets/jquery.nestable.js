@@ -407,6 +407,7 @@
 
             $.ajax({
                 url: this.options.moveUrl + '?id=' + id,
+                method: 'POST',
                 context: document.body,
                 data: {
                     parent: $(parent).data('id'),
