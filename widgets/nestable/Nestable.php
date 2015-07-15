@@ -20,22 +20,25 @@ use yii\helpers\Url;
 class Nestable extends Widget
 {
     /**
-     * Идентификатор виджета
      * @var string
      */
     public $id;
 
     /**
-     * Модель данных
      * @var array
      */
     public $modelClass;
 
     /**
+     * @var array
+     */
+    public $nameAttribute = 'name';
+
+    /**
      * Behavior key in list all behaviors on model
      * @var string
      */
-    public $behaviorName;
+    public $behaviorName = 'nestedSetsBehavior';
 
     /**
      * @var array.
@@ -64,7 +67,7 @@ class Nestable extends Widget
      * Url to page additional update model
      * @var string
      */
-    public $additionalUpdateUrl;
+    public $advancedUpdateRoute;
 
     /**
      * Url to DeleteNodeAction
@@ -77,6 +80,16 @@ class Nestable extends Widget
      * @var array
      */
     private $_items = [];
+
+    /**
+     * @var string
+     */
+    private $_leftAttribute;
+
+    /**
+     * @var string
+     */
+    private $_rightAttribute;
 
     /**
      * Инициализация плагина
@@ -97,20 +110,26 @@ class Nestable extends Widget
             throw new InvalidConfigException("No 'behaviorName' supplied on action initialization.");
         }
 
+        if (null == $this->advancedUpdateRoute && !($controller = Yii::$app->controller)) {
+            $this->advancedUpdateRoute = "{$controller->id}/update";
+        }
+
         /** @var ActiveRecord $model */
         $model = new $this->modelClass;
         /** @var NestedSetsBehavior $behavior */
         $behavior = $model->getBehavior($this->behaviorName);
 
+        $this->_leftAttribute = $behavior->leftAttribute;
+        $this->_rightAttribute = $behavior->rightAttribute;
+
         $items = $model::find()
-            ->orderBy([$behavior->leftAttribute => SORT_ASC])
-            ->asArray()
+            ->orderBy([$this->_leftAttribute => SORT_ASC])
             ->all();
         $this->_items = $this->prepareItems($items);
     }
 
     /**
-     * @param $items
+     * @param ActiveRecord[] $items
      * @return array
      */
     private function prepareItems($items)
@@ -118,9 +137,9 @@ class Nestable extends Widget
         $stack = [];
         $arraySet = [];
 
-        foreach ($items as $intKey => $arrValues) {
+        foreach ($items as $item) {
             $stackSize = count($stack);
-            while ($stackSize > 0 && $stack[$stackSize - 1]['rgt'] < $arrValues['lft']) {
+            while ($stackSize > 0 && $stack[$stackSize - 1]['rgt'] < $item->{$this->_leftAttribute}) {
                 array_pop($stack);
                 $stackSize--;
             }
@@ -130,13 +149,14 @@ class Nestable extends Widget
                 $link =& $link[$stack[$i]['index']]['children']; //navigate to the proper children array
             }
             $tmp = array_push($link, [
-                'id' => $arrValues['id'],
-                'name' => $arrValues['name'],
+                'id' => $item->getPrimaryKey(),
+                'name' => $item->{$this->nameAttribute},
+                'update-url' => Url::to([$this->advancedUpdateRoute, 'id' => $item->getPrimaryKey()]),
                 'children' => []
             ]);
             array_push($stack, [
                 'index' => $tmp - 1,
-                'rgt' => $arrValues['rgt']
+                'rgt' => $item->{$this->_rightAttribute}
             ]);
         }
 
@@ -205,7 +225,7 @@ class Nestable extends Widget
     private function getDefaultPluginOptions()
     {
         $options = [
-            'namePlaceholder' => $this->getNamePlaceholder(),
+            'namePlaceholder' => $this->getPlaceholderForName(),
         ];
 
         $controller = Yii::$app->controller;
@@ -222,7 +242,7 @@ class Nestable extends Widget
     /**
      * Get placeholder for Name input
      */
-    public function getNamePlaceholder()
+    public function getPlaceholderForName()
     {
         return Yii::t('voskobovich/nestedsets', 'Node name');
     }
@@ -262,7 +282,7 @@ class Nestable extends Widget
         echo Html::beginTag('div', ['class' => 'dd-nestable', 'id' => $this->id]);
 
         $menu = (count($this->_items) > 0) ? $this->_items : [
-            ['id' => 0, 'name' => $this->getNamePlaceholder()]
+            ['id' => 0, 'name' => $this->getPlaceholderForName()]
         ];
 
         $this->printLevel($menu);
@@ -293,6 +313,7 @@ class Nestable extends Widget
     {
         $htmlOptions = ['class' => 'dd-item'];
         $htmlOptions['data-id'] = !empty($item['id']) ? $item['id'] : '';
+        $htmlOptions['data-update-url'] = !empty($item['update-url']) ? $item['update-url'] : '';
 
         echo Html::beginTag('li', $htmlOptions);
 
@@ -300,7 +321,7 @@ class Nestable extends Widget
         echo Html::tag('div', $item['name'], ['class' => 'dd-content']);
 
         echo Html::beginTag('div', ['class' => 'dd-edit-panel']);
-        echo Html::input('text', null, $item['name'], ['class' => 'dd-input-name', 'placeholder' => $this->getNamePlaceholder()]);
+        echo Html::input('text', null, $item['name'], ['class' => 'dd-input-name', 'placeholder' => $this->getPlaceholderForName()]);
 
         echo ButtonGroup::widget([
             'buttons' => [
@@ -309,12 +330,12 @@ class Nestable extends Widget
                     'options' => ['class' => 'btn btn-success btn-sm']
                 ],
                 [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Remove'),
-                    'options' => ['class' => 'btn btn-danger btn-sm']
+                    'label' => Yii::t('voskobovich/nestedsets', 'Advanced editing'),
+                    'options' => ['class' => 'btn btn-default btn-sm']
                 ],
                 [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Additional mode'),
-                    'options' => ['class' => 'btn btn-default btn-sm']
+                    'label' => Yii::t('voskobovich/nestedsets', 'Remove'),
+                    'options' => ['class' => 'btn btn-danger btn-sm']
                 ],
             ]
         ]);
