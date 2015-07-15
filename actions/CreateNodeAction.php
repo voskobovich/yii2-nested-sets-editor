@@ -7,19 +7,26 @@ use yii\base\Action;
 use yii\base\InvalidConfigException;
 use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
 use yii\db\ActiveRecord;
+use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 
 /**
- * Class DeleteNodeAction
+ * Class CreateNodeAction
  * @package voskobovich\nestedsets\actions
  */
-class DeleteNodeAction extends Action
+class CreateNodeAction extends Action
 {
     /**
      * Class to use to locate the supplied data ids
      * @var string
      */
     public $modelClass;
+
+    /**
+     * Attribute for name in model
+     * @var string
+     */
+    public $nameAttribute = 'name';
 
     /**
      * @throws InvalidConfigException
@@ -32,30 +39,24 @@ class DeleteNodeAction extends Action
     }
 
     /**
-     * Move a node (model) below the parent and in between left and right
-     *
-     * @param integer $id the primaryKey of the moved node
-     * @return array
-     * @throws NotFoundHttpException
+     * @return null
+     * @throws HttpException
      */
-    public function run($id)
+    public function run()
     {
-        /** @var ActiveRecord $model */
-        $model = new $this->modelClass;
-
-        /*
-         * Locate the supplied model, left, right and parent models
-         */
-        $pkAttribute = $model->getTableSchema()->primaryKey[0];
+        $name = Yii::$app->request->post('name');
 
         /** @var ActiveRecord|NestedSetsBehavior $model */
-        $model = $model::find()->where([$pkAttribute => $id])->one();
+        $model = new $this->modelClass;
+        $model->{$this->nameAttribute} = $name;
 
-        if ($model == null) {
-            throw new NotFoundHttpException('Node not found');
+        $roots = $model::find()->roots()->all();
+
+        if (isset($roots[0])) {
+            $model->appendTo($roots[0]);
+        } else {
+            $model->makeRoot();
         }
-
-        $model->deleteWithChildren();
 
         return null;
     }

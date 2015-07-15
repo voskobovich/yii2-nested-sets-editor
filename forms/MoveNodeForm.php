@@ -40,7 +40,7 @@ class MoveNodeForm extends Model
     public function rules()
     {
         return [
-            [['id', 'left', 'right', 'parent'], 'required']
+            [['id', 'left', 'right', 'parent'], 'integer']
         ];
     }
 

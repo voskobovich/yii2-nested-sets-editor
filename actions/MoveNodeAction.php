@@ -43,7 +43,6 @@ class MoveNodeAction extends Action
      * @param integer $id the primaryKey of the moved node
      * @return array
      * @throws HttpException
-     * @throws InvalidConfigException
      */
     public function run($id)
     {

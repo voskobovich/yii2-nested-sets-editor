@@ -6,12 +6,14 @@ use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\base\Widget;
+use yii\bootstrap\Button;
 use yii\bootstrap\ButtonGroup;
 use yii\db\ActiveRecord;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\helpers\Url;
+use yii\widgets\Pjax;
 
 /**
  * Class Nestable
@@ -168,17 +170,23 @@ class Nestable extends Widget
      */
     public function run()
     {
-        $this->registerAssets();
-
+        $this->registerActionButtonsAssets();
         $this->actionButtons();
+
+        Pjax::begin([
+            'id' => $this->id . '-pjax'
+        ]);
+        $this->registerPluginAssets();
         $this->renderMenu();
+        Pjax::end();
+
         $this->actionButtons();
     }
 
     /**
      * Register Asset manager
      */
-    private function registerAssets()
+    private function registerPluginAssets()
     {
         NestableAsset::register($this->getView());
 
@@ -200,18 +208,35 @@ class Nestable extends Widget
         $pluginOptions = ArrayHelper::merge($this->getDefaultPluginOptions(), $this->pluginOptions);
         $pluginOptions = Json::encode($pluginOptions);
         $view->registerJs("$('#{$this->id}').nestable({$pluginOptions});");
+    }
 
+    /**
+     * Register Asset manager
+     */
+    private function registerActionButtonsAssets()
+    {
+        $view = $this->getView();
         $view->registerJs("
 			$('.{$this->id}-nestable-menu').on('click', function(e) {
 				var target = $(e.target),
 				    action = target.data('action');
 
+                    console.log(action);
+
 				switch (action) {
-					case 'expand-all': $('#{$this->id}').nestable('expandAll');
+					case 'expand-all':
+					    $('#{$this->id}').nestable('expandAll');
+					    $('.{$this->id}-nestable-menu [data-action=\"expand-all\"]').hide();
+					    $('.{$this->id}-nestable-menu [data-action=\"collapse-all\"]').show();
+
 						break;
-					case 'collapse-all': $('#{$this->id}').nestable('collapseAll');
+					case 'collapse-all':
+					    $('#{$this->id}').nestable('collapseAll');
+					    $('.{$this->id}-nestable-menu [data-action=\"expand-all\"]').show();
+					    $('.{$this->id}-nestable-menu [data-action=\"collapse-all\"]').hide();
+
 						break;
-					case 'create-item': $('#{$this->id}').nestable('createItem');
+					case 'create-item': $('#{$this->id}').nestable('createNode');
 				}
 
 				return false;
@@ -228,6 +253,7 @@ class Nestable extends Widget
         $options = [
             'namePlaceholder' => $this->getPlaceholderForName(),
             'deleteAlert' => Yii::t('voskobovich/nestedsets', 'The nobe will be removed together with the children. Are you sure?'),
+            'newNodeTitle' => Yii::t('voskobovich/nestedsets', 'Enter the new node name'),
         ];
 
         $controller = Yii::$app->controller;
@@ -256,31 +282,21 @@ class Nestable extends Widget
     {
         echo Html::beginTag('div', ['class' => "{$this->id}-nestable-menu"]);
 
-        echo ButtonGroup::widget([
-            'buttons' => [
-                [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Add node'),
-                    'options' => [
-                        'data-action' => 'create-item',
-                        'class' => 'btn btn-success'
-                    ]
-                ],
-                [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Collapse all'),
-                    'options' => [
-                        'data-action' => 'collapse-all',
-                        'class' => 'btn btn-default'
-                    ]
-                ],
-                [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Expand node'),
-                    'options' => [
-                        'data-action' => 'expand-all',
-                        'class' => 'btn btn-default'
-                    ]
-                ],
-            ]
+        echo Html::beginTag('div', ['class' => 'btn-group']);
+        echo Html::button(Yii::t('voskobovich/nestedsets', 'Add node'), [
+            'data-action' => 'create-item',
+            'class' => 'btn btn-success'
         ]);
+        echo Html::button(Yii::t('voskobovich/nestedsets', 'Collapse all'), [
+            'data-action' => 'collapse-all',
+            'class' => 'btn btn-default'
+        ]);
+        echo Html::button(Yii::t('voskobovich/nestedsets', 'Expand all'), [
+            'data-action' => 'expand-all',
+            'class' => 'btn btn-default',
+            'style' => 'display: none'
+        ]);
+        echo Html::endTag('div');
 
         echo Html::endTag('div');
     }
@@ -333,29 +349,22 @@ class Nestable extends Widget
         echo Html::beginTag('div', ['class' => 'dd-edit-panel']);
         echo Html::input('text', null, $item['name'], ['class' => 'dd-input-name', 'placeholder' => $this->getPlaceholderForName()]);
 
-        echo ButtonGroup::widget([
-            'buttons' => [
-                [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Save'),
-                    'options' => [
-                        'data-action' => 'save',
-                        'class' => 'btn btn-success btn-sm',
-                    ]
-                ],
-                Html::a(Yii::t('voskobovich/nestedsets', 'Advanced editing'), $item['update-url'], [
-                    'data-action' => 'advanced-editing',
-                    'class' => 'btn btn-default btn-sm',
-                    'target' => '_blank'
-                ]),
-                [
-                    'label' => Yii::t('voskobovich/nestedsets', 'Delete'),
-                    'options' => [
-                        'data-action' => 'delete',
-                        'class' => 'btn btn-danger btn-sm'
-                    ]
-                ],
-            ]
+        echo Html::beginTag('div', ['class' => 'btn-group']);
+        echo Html::button(Yii::t('voskobovich/nestedsets', 'Save'), [
+            'data-action' => 'save',
+            'class' => 'btn btn-success btn-sm',
         ]);
+        echo Html::a(Yii::t('voskobovich/nestedsets', 'Advanced editing'), $item['update-url'], [
+            'data-action' => 'advanced-editing',
+            'class' => 'btn btn-default btn-sm',
+            'target' => '_blank'
+        ]);
+        echo Html::button(Yii::t('voskobovich/nestedsets', 'Delete'), [
+            'data-action' => 'delete',
+            'class' => 'btn btn-danger btn-sm'
+        ]);
+        echo Html::endTag('div');
+
         echo Html::endTag('div');
 
         if (isset($item['children']) && count($item['children'])) {

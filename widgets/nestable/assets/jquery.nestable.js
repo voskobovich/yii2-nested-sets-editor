@@ -57,7 +57,8 @@
         updateUrl: '',
         deleteUrl: '',
         namePlaceholder: '',
-        deleteAlert: 'The nobe will be removed together with the children. Are you sure?'
+        deleteAlert: 'The nobe will be removed together with the children. Are you sure?',
+        newNodeTitle: 'Enter the new node name'
     };
 
     function Plugin(element, options) {
@@ -199,74 +200,6 @@
                     tree.deleteNodeRequest(li);
                 }
             });
-
-        },
-
-        ///**
-        // * Добавление формы редактирования
-        // * @param li
-        // */
-        //createEditForm: function (li) {
-        //    var tree = this;
-        //
-        //    // Div-обертка
-        //    var div = document.createElement('div');
-        //    div.className = this.options.editPanelClass;
-        //
-        //    // Input для названия
-        //    var inputName = document.createElement('input');
-        //    inputName.type = 'text';
-        //    inputName.className = this.options.inputNameClass;
-        //    inputName.placeholder = this.options.namePlaceholder;
-        //    $(inputName).on('keyup', function () {
-        //        var input = $(this),
-        //            li = input.parent().parent(),
-        //            content = li.children('.' + tree.options.contentClass),
-        //            val = input.val();
-        //
-        //        content.html(val);
-        //    });
-        //    $(div).append(inputName);
-        //
-        //    var inlineList = li.children(this.options.listNodeName);
-        //
-        //    if (inlineList.length > 0) {
-        //        inlineList.before(div)
-        //    } else {
-        //        li.append(div);
-        //    }
-        //},
-
-        /**
-         * Создание нового пункта
-         */
-        createItem: function () {
-            var div1 = document.createElement('div');
-            div1.className = this.options.handleClass;
-            div1.textContent = "Drag";
-
-            var div2 = document.createElement('div');
-            div2.className = this.options.contentClass;
-            div2.textContent = this.options.namePlaceholder;
-
-            var li = document.createElement('li');
-            li.className = this.options.itemClass;
-            $(li).append(div1);
-            $(li).append(div2);
-            $(li).data('id', null);
-
-            //this.createEditForm($(li));
-
-            this.el.find(this.options.listNodeName).eq(0).append(li);
-
-            // Автооткрытие панели свойств пункта
-            $('.' + this.options.editPanelClass)
-                .slideUp(100)
-                .removeClass(this.options.inputOpenClass);
-
-            var editPanel = $(li).children('.' + this.options.editPanelClass);
-            editPanel.addClass(this.options.inputOpenClass);
-            editPanel.slideDown(100);
         },
 
         reset: function () {
@@ -400,6 +333,28 @@
         },
 
         /**
+         * Создание нового пункта
+         */
+        createNode: function () {
+            var tree = this,
+                wId = tree.el.attr('id');
+
+            var name = prompt(tree.options.newNodeTitle);
+            if (name != null) {
+                $.ajax({
+                    url: this.options.createUrl,
+                    method: 'POST',
+                    context: document.body,
+                    data: {name: name}
+                }).success(function (data, textStatus, jqXHR) {
+                    $.pjax.reload({container: '#' + wId + '-pjax'});
+                }).fail(function (jqXHR) {
+                    alert(jqXHR.responseText);
+                });
+            }
+        },
+
+        /**
          * Save new node position on server
          * @param el
          */
@@ -445,7 +400,9 @@
         },
 
         updateNodeRequest: function (el) {
-            var id = el.data('id');
+            var tree = this,
+                id = el.data('id');
+
             if (typeof id === "undefined" || !id) {
                 return false;
             }
@@ -460,7 +417,9 @@
                     name: name.val()
                 }
             }).success(function (data, textStatus, jqXHR) {
-                // Скрыть панель
+                var editPanel = el.children('.' + tree.options.editPanelClass);
+                editPanel.removeClass(tree.options.inputOpenClass);
+                editPanel.slideUp(100);
             }).fail(function (jqXHR) {
                 alert(jqXHR.responseText);
             });

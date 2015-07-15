@@ -30,12 +30,6 @@ class UpdateNodeAction extends Action
     public $nameAttribute = 'name';
 
     /**
-     * Behavior key in list all behaviors on model
-     * @var string
-     */
-    public $behaviorName = 'nestedSetsBehavior';
-
-    /**
      * @throws InvalidConfigException
      */
     public function init()
