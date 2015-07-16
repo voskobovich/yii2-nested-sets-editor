@@ -33,7 +33,7 @@ to the require section of your `composer.json` file.
 
 Usage
 -----
-1. Подключите behavior из этого пакета к своей модели и сконфигурируйте как сказано в [документации](https://github.com/creocoder/yii2-nested-sets).  
+1. Подключите behavior из этого пакета к своей модели и сконфигурируйте как сказано в [документации](https://github.com/creocoder/yii2-nested-sets).
 ```
 public function behaviors()
 {
@@ -42,7 +42,7 @@ public function behaviors()
     ];
 }
 ```  
-2. Подключите в контроллер дополнительные actions  
+2. Подключите в контроллер дополнительные actions
 ```
 public function actions()
 {
