@@ -5,7 +5,7 @@ Editor nested set using jquery.nestable plugin.
 Реализует полный набор CRUD операций для узлов дерева.
 
 Installation
-------------
+-------------
 
 The preferred way to install this extension is through [composer](http://getcomposer.org/download/).
 
