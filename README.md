@@ -1,5 +1,4 @@
 # Nested Sets Editor for Yii2
-========================
 Editor nested set using jquery.nestable plugin.
 
 Реализует полный набор CRUD операций для узлов дерева.
