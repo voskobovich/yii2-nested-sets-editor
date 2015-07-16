@@ -42,7 +42,6 @@ public function behaviors()
     ];
 }
 ```
-
 2. Подключите в контроллер дополнительные actions  
 ```
 public function actions()
@@ -67,7 +66,6 @@ public function actions()
     ];
 }
 ```
-
 3. Выведите виджет в удобном месте
 ```
 <?= \voskobovich\nestedsets\widgets\nestable\Nestable::widget([
