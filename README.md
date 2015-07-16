@@ -41,7 +41,7 @@ public function behaviors()
         'nestedSetsBehavior' => 'voskobovich\nestedsets\behaviors\NestedSetsBehavior',
     ];
 }
-```
+```  
 2. Подключите в контроллер дополнительные actions  
 ```
 public function actions()
@@ -65,7 +65,7 @@ public function actions()
         ],
     ];
 }
-```
+```  
 3. Выведите виджет в удобном месте
 ```
 <?= \voskobovich\nestedsets\widgets\nestable\Nestable::widget([
