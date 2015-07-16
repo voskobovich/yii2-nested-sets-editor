@@ -35,9 +35,6 @@ Usage
 -----
 1. Подключите behavior из этого пакета к своей модели и сконфигурируйте как сказано в [документации](https://github.com/creocoder/yii2-nested-sets).  
 ```
-/**
- * @return array
- */
 public function behaviors()
 {
     return [
@@ -48,9 +45,6 @@ public function behaviors()
 
 2. Подключите в контроллер дополнительные actions  
 ```
-/**
- * @return array
- */
 public function actions()
 {
     return [
