@@ -69,6 +69,6 @@ public function actions()
 3. Выведите виджет в удобном месте
 ```
 <?= \voskobovich\nestedsets\widgets\nestable\Nestable::widget([
-    'modelClass' => '\backend\models\Activity',
+    'modelClass' => 'models\ModelName',
 ]) ?>
 ```
