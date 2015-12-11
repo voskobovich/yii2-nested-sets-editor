@@ -308,11 +308,7 @@ class Nestable extends Widget
     {
         echo Html::beginTag('div', ['class' => 'dd-nestable', 'id' => $this->id]);
 
-        $menu = (count($this->_items) > 0) ? $this->_items : [
-            ['id' => 0, 'name' => $this->getPlaceholderForName()]
-        ];
-
-        $this->printLevel($menu);
+        $this->printLevel($this->_items);
 
         echo Html::endTag('div');
     }
