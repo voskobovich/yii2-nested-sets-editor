@@ -53,7 +53,6 @@
         maxDepth: 5,
         threshold: 20,
         moveUrl: '',
-        createUrl: '',
         updateUrl: '',
         deleteUrl: '',
         namePlaceholder: '',
@@ -330,28 +329,6 @@
                 this.dragRootEl.trigger('change');
             }
             this.reset();
-        },
-
-        /**
-         * Создание нового пункта
-         */
-        createNode: function () {
-            var tree = this,
-                wId = tree.el.attr('id');
-
-            var name = prompt(tree.options.newNodeTitle);
-            if (name != null) {
-                $.ajax({
-                    url: this.options.createUrl,
-                    method: 'POST',
-                    context: document.body,
-                    data: {name: name}
-                }).success(function (data, textStatus, jqXHR) {
-                    $.pjax.reload({container: '#' + wId + '-pjax'});
-                }).fail(function (jqXHR) {
-                    alert(jqXHR.responseText);
-                });
-            }
         },
 
         /**

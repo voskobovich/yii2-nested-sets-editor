@@ -6,8 +6,7 @@ use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\base\Widget;
-use yii\bootstrap\Button;
-use yii\bootstrap\ButtonGroup;
+use yii\bootstrap\ActiveForm;
 use yii\db\ActiveRecord;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
@@ -166,6 +165,21 @@ class Nestable extends Widget
     }
 
     /**
+     * @param null $name
+     * @return array
+     */
+    private function getPluginOptions($name = null)
+    {
+        $options = ArrayHelper::merge($this->getDefaultPluginOptions(), $this->pluginOptions);
+
+        if (isset($options[$name])) {
+            return $options[$name];
+        }
+
+        return $options;
+    }
+
+    /**
      * Работаем!
      */
     public function run()
@@ -178,6 +192,7 @@ class Nestable extends Widget
         ]);
         $this->registerPluginAssets();
         $this->renderMenu();
+        $this->renderForm();
         Pjax::end();
 
         $this->actionButtons();
@@ -190,24 +205,28 @@ class Nestable extends Widget
     {
         NestableAsset::register($this->getView());
 
-        if ($this->moveUrl) {
-            $this->pluginOptions['moveUrl'] = $this->moveUrl;
-        }
-        if ($this->createUrl) {
-            $this->pluginOptions['createUrl'] = $this->createUrl;
-        }
-        if ($this->updateUrl) {
-            $this->pluginOptions['updateUrl'] = $this->updateUrl;
-        }
-        if ($this->deleteUrl) {
-            $this->pluginOptions['deleteUrl'] = $this->deleteUrl;
-        }
-
         $view = $this->getView();
 
-        $pluginOptions = ArrayHelper::merge($this->getDefaultPluginOptions(), $this->pluginOptions);
+        $pluginOptions = $this->getPluginOptions();
         $pluginOptions = Json::encode($pluginOptions);
         $view->registerJs("$('#{$this->id}').nestable({$pluginOptions});");
+        $view->registerJs("
+			$('#{$this->id}-new-node-form').on('beforeSubmit', function(e){
+                $.ajax({
+                    url: '{$this->getPluginOptions('createUrl')}',
+                    method: 'POST',
+                    data: $(this).serialize()
+                }).success(function (data, textStatus, jqXHR) {
+                    $('#{$this->id}-new-node-modal').modal('hide')
+                    $.pjax.reload({container: '#{$this->id}-pjax'});
+                    window.scrollTo(0, document.body.scrollHeight);
+                }).fail(function (jqXHR) {
+                    alert(jqXHR.responseText);
+                });
+
+                return false;
+			});
+		");
     }
 
     /**
@@ -217,11 +236,11 @@ class Nestable extends Widget
     {
         $view = $this->getView();
         $view->registerJs("
-			$('.{$this->id}-nestable-menu').on('click', function(e) {
+			$('.{$this->id}-nestable-menu [data-action]').on('click', function(e) {
+                e.preventDefault();
+
 				var target = $(e.target),
 				    action = target.data('action');
-
-                    console.log(action);
 
 				switch (action) {
 					case 'expand-all':
@@ -236,10 +255,7 @@ class Nestable extends Widget
 					    $('.{$this->id}-nestable-menu [data-action=\"collapse-all\"]').hide();
 
 						break;
-					case 'create-item': $('#{$this->id}').nestable('createNode');
 				}
-
-				return false;
 			});
 		");
     }
@@ -252,7 +268,8 @@ class Nestable extends Widget
     {
         $options = [
             'namePlaceholder' => $this->getPlaceholderForName(),
-            'deleteAlert' => Yii::t('voskobovich/nestedsets', 'The nobe will be removed together with the children. Are you sure?'),
+            'deleteAlert' => Yii::t('voskobovich/nestedsets',
+                'The nobe will be removed together with the children. Are you sure?'),
             'newNodeTitle' => Yii::t('voskobovich/nestedsets', 'Enter the new node name'),
         ];
 
@@ -262,6 +279,19 @@ class Nestable extends Widget
             $options['createUrl'] = Url::to(["{$controller->id}/createNode"]);
             $options['updateUrl'] = Url::to(["{$controller->id}/updateNode"]);
             $options['deleteUrl'] = Url::to(["{$controller->id}/deleteNode"]);
+        }
+
+        if ($this->moveUrl) {
+            $this->pluginOptions['moveUrl'] = $this->moveUrl;
+        }
+        if ($this->createUrl) {
+            $this->pluginOptions['createUrl'] = $this->createUrl;
+        }
+        if ($this->updateUrl) {
+            $this->pluginOptions['updateUrl'] = $this->updateUrl;
+        }
+        if ($this->deleteUrl) {
+            $this->pluginOptions['deleteUrl'] = $this->deleteUrl;
         }
 
         return $options;
@@ -284,7 +314,8 @@ class Nestable extends Widget
 
         echo Html::beginTag('div', ['class' => 'btn-group']);
         echo Html::button(Yii::t('voskobovich/nestedsets', 'Add node'), [
-            'data-action' => 'create-item',
+            'data-toggle' => 'modal',
+            'data-target' => "#{$this->id}-new-node-modal",
             'class' => 'btn btn-success'
         ]);
         echo Html::button(Yii::t('voskobovich/nestedsets', 'Collapse all'), [
@@ -308,9 +339,66 @@ class Nestable extends Widget
     {
         echo Html::beginTag('div', ['class' => 'dd-nestable', 'id' => $this->id]);
 
-        $this->printLevel($this->_items);
+        $menu = (count($this->_items) > 0) ? $this->_items : [
+            ['id' => 0, 'name' => $this->getPlaceholderForName()]
+        ];
+
+        $this->printLevel($menu);
 
         echo Html::endTag('div');
+    }
+
+    /**
+     * Render form for new node
+     */
+    private function renderForm()
+    {
+        /** @var ActiveRecord $model */
+        $model = new $this->modelClass;
+
+        echo <<<HTML
+<div class="modal" id="{$this->id}-new-node-modal" tabindex="-1" role="dialog" aria-labelledby="newNodeModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+HTML;
+        /** @var ActiveForm $form */
+        $form = ActiveForm::begin([
+            'id' => $this->id . '-new-node-form'
+        ]);
+
+        echo <<<HTML
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="newNodeModalLabel">New node</h4>
+      </div>
+      <div class="modal-body">
+HTML;
+
+        $this->renderFormFields($form, $model);
+
+        echo <<<HTML
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Create node</button>
+      </div>
+HTML;
+        $form->end();
+        echo <<<HTML
+    </div>
+  </div>
+</div>
+HTML;
+    }
+
+    /**
+     * Render form fields on new node form
+     * @param ActiveForm $form
+     * @param ActiveRecord $model
+     */
+    private function renderFormFields($form, $model)
+    {
+        echo $form->field($model, 'name');
     }
 
     /**
@@ -343,7 +431,8 @@ class Nestable extends Widget
         echo Html::tag('div', $item['name'], ['class' => 'dd-content']);
 
         echo Html::beginTag('div', ['class' => 'dd-edit-panel']);
-        echo Html::input('text', null, $item['name'], ['class' => 'dd-input-name', 'placeholder' => $this->getPlaceholderForName()]);
+        echo Html::input('text', null, $item['name'],
+            ['class' => 'dd-input-name', 'placeholder' => $this->getPlaceholderForName()]);
 
         echo Html::beginTag('div', ['class' => 'btn-group']);
         echo Html::button(Yii::t('voskobovich/nestedsets', 'Save'), [

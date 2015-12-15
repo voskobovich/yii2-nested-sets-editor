@@ -3,7 +3,6 @@
 namespace voskobovich\nestedsets\actions;
 
 use Yii;
-use yii\base\Action;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
@@ -15,29 +14,13 @@ use yii\web\NotFoundHttpException;
  * Class UpdateNodeAction
  * @package voskobovich\nestedsets\actions
  */
-class UpdateNodeAction extends Action
+class UpdateNodeAction extends BaseAction
 {
-    /**
-     * Class to use to locate the supplied data ids
-     * @var string
-     */
-    public $modelClass;
-
     /**
      * Attribute for name in model
      * @var string
      */
     public $nameAttribute = 'name';
-
-    /**
-     * @throws InvalidConfigException
-     */
-    public function init()
-    {
-        if (null == $this->modelClass) {
-            throw new InvalidConfigException('Param "modelClass" must be contain model name with namespace.');
-        }
-    }
 
     /**
      * Move a node (model) below the parent and in between left and right

@@ -3,8 +3,6 @@
 namespace voskobovich\nestedsets\actions;
 
 use Yii;
-use yii\base\Action;
-use yii\base\InvalidConfigException;
 use voskobovich\nestedsets\behaviors\NestedSetsBehavior;
 use yii\db\ActiveRecord;
 use yii\web\NotFoundHttpException;
@@ -13,24 +11,8 @@ use yii\web\NotFoundHttpException;
  * Class DeleteNodeAction
  * @package voskobovich\nestedsets\actions
  */
-class DeleteNodeAction extends Action
+class DeleteNodeAction extends BaseAction
 {
-    /**
-     * Class to use to locate the supplied data ids
-     * @var string
-     */
-    public $modelClass;
-
-    /**
-     * @throws InvalidConfigException
-     */
-    public function init()
-    {
-        if (null == $this->modelClass) {
-            throw new InvalidConfigException('Param "modelClass" must be contain model name with namespace.');
-        }
-    }
-
     /**
      * Move a node (model) below the parent and in between left and right
      *
