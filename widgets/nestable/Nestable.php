@@ -77,6 +77,12 @@ class Nestable extends Widget
     public $deleteUrl;
 
     /**
+     * Handler for render form fields on create new node
+     * @var callable
+     */
+    public $formFieldsCallable;
+
+    /**
      * Структура меню в php array формате
      * @var array
      */
@@ -113,6 +119,13 @@ class Nestable extends Widget
 
         if (null == $this->advancedUpdateRoute && ($controller = Yii::$app->controller)) {
             $this->advancedUpdateRoute = "{$controller->id}/update";
+        }
+
+        if ($this->formFieldsCallable == null) {
+            $this->formFieldsCallable = function ($form, $model) {
+                /** @var ActiveForm $form */
+                echo $form->field($model, 'name');
+            };
         }
 
         /** @var ActiveRecord $model */
@@ -374,7 +387,7 @@ HTML;
       <div class="modal-body">
 HTML;
 
-        $this->renderFormFields($form, $model);
+        echo call_user_func($this->formFieldsCallable, $form, $model);
 
         echo <<<HTML
       </div>
@@ -389,16 +402,6 @@ HTML;
   </div>
 </div>
 HTML;
-    }
-
-    /**
-     * Render form fields on new node form
-     * @param ActiveForm $form
-     * @param ActiveRecord $model
-     */
-    private function renderFormFields($form, $model)
-    {
-        echo $form->field($model, 'name');
     }
 
     /**
