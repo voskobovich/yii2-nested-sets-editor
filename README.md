@@ -3,6 +3,10 @@ Editor nested set using jquery.nestable plugin.
 
 Реализует полный набор CRUD операций для узлов дерева.
 
+Внимание!
+---
+Есть улучшеная версия пакета для управление деревом - [yii2-tree-manager](https://github.com/voskobovich/yii2-tree-manager).
+
 Installation
 -------------
 
