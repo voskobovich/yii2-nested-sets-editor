@@ -124,7 +124,7 @@ class Nestable extends Widget
         if ($this->formFieldsCallable == null) {
             $this->formFieldsCallable = function ($form, $model) {
                 /** @var ActiveForm $form */
-                echo $form->field($model, 'name');
+                echo $form->field($model, $this->nameAttribute);
             };
         }
 
