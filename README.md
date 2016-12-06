@@ -1,4 +1,10 @@
-# Nested Sets Editor for Yii2
+Yii2 Nested Sets Editor
+===
+
+This behavior soon will be **DEPRECATED**.  
+See the new version [**Yii2 Tree Manager**](https://github.com/voskobovich/yii2-tree-manager).
+
+## About
 Editor nested set using jquery.nestable plugin.
 
 Реализует полный набор CRUD операций для узлов дерева.
