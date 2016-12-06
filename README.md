@@ -36,7 +36,7 @@ to the require section of your `composer.json` file.
 Внимание!
 -----
 В расширении наследуется и расширяется behavior [Nested Sets Behavior for Yii 2](https://github.com/creocoder/yii2-nested-sets).  
-Всю информацию по настройке воедения можно взять на [странице](https://github.com/creocoder/yii2-nested-sets) поведения.
+Всю информацию по настройке поведения можно взять на [странице](https://github.com/creocoder/yii2-nested-sets).
 
 Но для работы виджета нужно использовать реализацию поведения из этого пакета!
 
